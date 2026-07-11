@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "library_name": "Domain Library",
+  "tenant": "domain-library",
+  "domain_summary": "Source-grounded academic domain library built from books and articles.",
+  "default_scope": "private",
+  "lanes": [
+    {
+      "id": "defs",
+      "profile": "defs",
+      "agent_profile": "defs.md",
+      "output": "domain-definitions.md",
+      "schema_output_suffix": "defs.json",
+      "focus_category": "Definitions",
+      "required_sections": ["Executive Summary", "Author's Words", "Rich Definitions"],
+      "acceptance": "Definitions, terminology, author language, exact same-slug block citations and embeds.",
+      "deps": [],
+      "minimums": "≥6 verbatim quotes of ≥20 words, exact block embeds, Rich Definitions section."
+    },
+    {
+      "id": "math",
+      "profile": "math",
+      "agent_profile": "math.md",
+      "output": "domain-math.md",
+      "schema_output_suffix": "math.json",
+      "focus_category": "Formulas",
+      "required_sections": ["Author's Formulation"],
+      "acceptance": "All numbered equations in LaTeX with equation context, notation, assumptions, same-slug block citations and embeds; no qualitative-only summary.",
+      "deps": [],
+      "minimums": "ALL numbered equations in LaTeX with equation context and block embeds."
+    },
+    {
+      "id": "examples",
+      "profile": "examples",
+      "agent_profile": "examples.md",
+      "output": "domain-examples.md",
+      "schema_output_suffix": "examples.json",
+      "focus_category": "Examples / Figures",
+      "required_sections": ["Specific Example", "Figures and Diagrams", "Implementation Details"],
+      "acceptance": "Examples, figures, diagrams, procedures, implementation details, parameter values, exact same-slug block citations and embeds.",
+      "deps": [],
+      "minimums": "Figures/tables, numerical examples, parameter values, and pseudocode if present."
+    },
+    {
+      "id": "warnings",
+      "profile": "warnings",
+      "agent_profile": "warnings.md",
+      "output": "domain-warnings.md",
+      "schema_output_suffix": "warnings.json",
+      "focus_category": "Warnings / Caveats",
+      "required_sections": ["Author's Warnings", "Limitations and Counter-Arguments"],
+      "acceptance": "Limitations, caveats, fragile assumptions, boundary conditions, counterarguments, exact same-slug block citations and embeds.",
+      "deps": [],
+      "minimums": "≥4 warnings if present, sensitivity ratings, model-boundary implications."
+    },
+    {
+      "id": "context",
+      "profile": "context",
+      "agent_profile": "context.md",
+      "output": "domain-empirical-context.md",
+      "schema_output_suffix": "context.json",
+      "focus_category": "Historical / Empirical References",
+      "required_sections": ["Historical / Empirical Context", "Calibration Data Sources", "Relations"],
+      "acceptance": "Named references, empirical context, calibration sources, source-grounded relations, exact same-slug block citations and embeds.",
+      "deps": [],
+      "minimums": "≥3 named historical/empirical references and ≥5 source-grounded relation predicates."
+    }
+  ]
+}

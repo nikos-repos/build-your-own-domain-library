@@ -1,16 +1,3 @@
-# Quant-Library Index
+# Domain Library Index
 
-> Content catalog. Read first to find relevant pages.
-> 
-
-## Comparisons
-
-## Queries
-
-## Workflows
-
-## Crystallizations
-
-## Form Contracts — see _meta/contracts/
-
-## Extracted Concepts
+No ingested concepts yet.

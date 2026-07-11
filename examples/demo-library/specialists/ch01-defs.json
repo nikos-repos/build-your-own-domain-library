@@ -1,0 +1,16 @@
+{
+  "source": "alice-1865",
+  "chapter": 1,
+  "chapter_title": "Down the Rabbit-Hole",
+  "extracted_at": "2026-07-09T00:00:00Z",
+  "concepts": [
+    {
+      "slug": "purposeful-reading",
+      "name": "Purposeful reading",
+      "block_ids": ["alice-1865-ch01-0001"]
+    }
+  ],
+  "entities": [],
+  "formulas": [],
+  "claims": []
+}

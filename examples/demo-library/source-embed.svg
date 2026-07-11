@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560" role="img" aria-labelledby="title desc">
+  <title id="title">Resolved source embed in the demo concept page</title>
+  <desc id="desc">A Markdown reading view displays Purposeful Reading with the linked Alice source block expanded.</desc>
+  <rect width="1000" height="560" fill="#171923"/>
+  <rect x="42" y="34" width="916" height="492" rx="12" fill="#242735" stroke="#4b5268"/>
+  <text x="80" y="88" fill="#a6accd" font-family="system-ui, sans-serif" font-size="18">concepts / purposeful-reading.md</text>
+  <text x="80" y="146" fill="#f3f4f6" font-family="Georgia, serif" font-size="34">Purposeful Reading</text>
+  <text x="80" y="190" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="18">A reader can judge a text by whether its form supports the experience they seek.</text>
+  <rect x="80" y="230" width="840" height="188" rx="8" fill="#1d2030" stroke="#7c3aed" stroke-width="2"/>
+  <text x="108" y="270" fill="#c4b5fd" font-family="system-ui, sans-serif" font-size="15">SOURCE EMBED · chapters/ch-01-down-rabbit-hole · ^alice-1865-ch01-0001</text>
+  <text x="108" y="326" fill="#f8fafc" font-family="Georgia, serif" font-size="23">Alice asks what use a book has without pictures</text>
+  <text x="108" y="360" fill="#f8fafc" font-family="Georgia, serif" font-size="23">or conversations.</text>
+  <circle cx="889" cy="391" r="8" fill="#22c55e"/>
+  <text x="868" y="458" fill="#86efac" font-family="system-ui, sans-serif" font-size="16" text-anchor="end">resolved</text>
+  <text x="80" y="486" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="15">Demo fixture · public-domain source · exact block target</text>
+</svg>

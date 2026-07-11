@@ -1,0 +1,7 @@
+{
+  "slug": "alice-1865",
+  "status": "DONE",
+  "gate": {"phase": "post", "status": "PASS"},
+  "audit": {"overall_pass": true, "embed_resolution": "PASS", "checked_concept_pages": 1},
+  "note": "Tracked documentation fixture; not a live OCR cost/timing measurement."
+}
