@@ -14,8 +14,8 @@ related_skills:
 
 ## The unified state runner — use it every time
 
-Agent drift — running phases out of order, re-running finished work,
-treating prepare artifacts as results, inventing commands — caused most major
+Agent drift : running phases out of order, re-running finished work,
+treating prepare artifacts as results, inventing commands have caused most major
 failures in this project's history. The state runner exists so nobody ever
 guesses the next command:
 
@@ -38,8 +38,7 @@ reconcile — trust the gate files, and fix via the debugging playbook, never
 by editing state.**
 
 Operating rule for agents: *run the state runner before and after every
-phase.* If your intended command differs from its NEXT line, you are drifting
-— stop.
+phase.* If your intended command differs from its NEXT line, you are drifting. Stop.
 
 ## Command anatomy
 
@@ -77,20 +76,20 @@ CONFIRM → confirm) → 5 → post (grounding QA + audit)`. Phases 1/1.5 and
 
 ## What lands where
 
-| Artifact | Path |
-| --- | --- |
-| OCR output, combined JSON, images | `raw/papers/<slug>/glmocr_output/` |
-| Reconstructed book | `raw/papers/<slug>/book_fidelity.md` |
-| Chapters with block anchors | `raw/papers/<slug>/chapters/*.md` (+ `chapters/images/`) |
-| Book-level reports (blocks, images, source index, size split) | `raw/papers/<slug>/*.json` |
-| Pipeline state | `_meta/extractions/<slug>/pipeline-state.json` |
-| Gates | `_meta/extractions/<slug>/gates/phase-*.json` |
-| Per-unit orchestrator + specialist outputs | `_meta/extractions/<slug>/team-<unit_id>/` |
-| Schema JSON drafts | `_meta/extractions/<slug>/schema/` |
-| Scoring/selection artifacts | `_meta/extractions/<slug>/master-*.json`, `concept-selection-*` |
-| **Published pages (the product)** | `concepts/*.md` |
-| Catalog + action log | `index.md`, `log.md` |
-| Audit reports | `_meta/reports/` |
+| Artifact                                                      | Path                                                            |
+| ------------------------------------------------------------- | --------------------------------------------------------------- |
+| OCR output, combined JSON, images                             | `raw/papers/<slug>/glmocr_output/`                              |
+| Reconstructed book                                            | `raw/papers/<slug>/book_fidelity.md`                            |
+| Chapters with block anchors                                   | `raw/papers/<slug>/chapters/*.md` (+ `chapters/images/`)        |
+| Book-level reports (blocks, images, source index, size split) | `raw/papers/<slug>/*.json`                                      |
+| Pipeline state                                                | `_meta/extractions/<slug>/pipeline-state.json`                  |
+| Gates                                                         | `_meta/extractions/<slug>/gates/phase-*.json`                   |
+| Per-unit orchestrator + specialist outputs                    | `_meta/extractions/<slug>/team-<unit_id>/`                      |
+| Schema JSON drafts                                            | `_meta/extractions/<slug>/schema/`                              |
+| Scoring/selection artifacts                                   | `_meta/extractions/<slug>/master-*.json`, `concept-selection-*` |
+| **Published pages (the product)**                             | `concepts/*.md`                                                 |
+| Catalog + action log                                          | `index.md`, `log.md`                                            |
+| Audit reports                                                 | `_meta/reports/`                                                |
 
 ## Operating discipline
 
@@ -110,6 +109,4 @@ CONFIRM → confirm) → 5 → post (grounding QA + audit)`. Phases 1/1.5 and
 - **Completion claim** requires the post-phase: grounding QA + audit exit 0
   (with `--ack` for hand-verified manual checks). "Pages exist" is not done.
 
-## When NOT to use this skill
-
-Maintenance and debugging references are under `docs/maintainers/`. Article ingestion is deferred until it has an executable runner and tests.
+# 

@@ -77,7 +77,7 @@ Rules:
 
 ### 6. Audit marker files
 
-Phase 4 now writes `_meta/extractions/<slug>/_blockid_valid` only from `library_phase4_merge_score.py --prepare` after `blockid_validator.py` returns a non-empty `valid` report. Do not create this marker by hand.
+Phase 4 writes `_meta/extractions/<slug>/_blockid_valid` only from `library_phase4_merge_score.py --prepare` after `blockid_validator.py` returns a non-empty `valid` report. Do not create this marker by hand.
 
 ### 7. Page depth / quote gates
 
@@ -88,11 +88,11 @@ Audit `PO-46` requires:
 - at least 2 substantial `>` quote lines
 
 For code-heavy R/computational sections, add an additional quote from nearby source blocks under `## Author's Words` rather than padding unrelated prose.
-Phase 3.5 now applies these depth checks at the team-presentation boundary before page creation: at least two block embeds and at least two substantial `Author's Words` quote lines per presentation.
-Phase 5 now enforces these checks in `library_phase5_pages.py`: generated concept pages must be at least 80 lines, include at least two block embeds, include at least two substantial `Author's Words` quote lines, and cite only block IDs present in Phase 3.5 team presentations and active chapters.
+Phase 3.5 applies these depth checks at the team-presentation boundary before page creation: at least two block embeds and at least two substantial `Author's Words` quote lines per presentation.
+Phase 5 enforces these checks in `library_phase5_pages.py`: generated concept pages must be at least 80 lines, include at least two block embeds, include at least two substantial `Author's Words` quote lines, and cite only block IDs present in Phase 3.5 team presentations and active chapters.
 
 
 
 ### 8. Schema validation boundary
 
-`EX-10` now expects the Phase 3.4 runner to validate schema JSON drafts under `_meta/extractions/<slug>/schema/`, write `schema-validation-report.json`, and machine-write `_validation_passed`. Custom generated-page JSON artifacts remain invalid substitutes for schema-compatible specialist extraction JSON.
+`EX-10`  expects the Phase 3.4 runner to validate schema JSON drafts under `_meta/extractions/<slug>/schema/`, write `schema-validation-report.json`, and machine-write `_validation_passed`. Custom generated-page JSON artifacts remain invalid substitutes for schema-compatible specialist extraction JSON.

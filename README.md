@@ -1,12 +1,12 @@
 # Build Your Own Domain Library
 
-An academic book ingestion and extraction pipeline for building a markdown knowledge base from PDFs. Inspired by the LLM Wiki pattern proposed by Andrej Karpathy, but revamped in a way that <u>actually works.</u> This gated pipeline that turns a raw source document (such as 900+ page books, and academic research articles) into **source-grounded, rich concept pages**.
+An academic book ingestion and extraction pipeline for building a markdown knowledge base from PDFs. Inspired by the LLM Wiki pattern proposed by Andrej Karpathy, but revamped in a way that <u>**actually works.**</u> This gated pipeline that turns a raw source document (such as 900+ page books, and academic research articles) into **source-grounded, rich concept pages**.
 
 These are markdown Library pages where every single claim you can see is backed by a click-through embed of the exact source passage.
 
-For me, this system has made tackling advanced subjects feel like a treasure hunt. 
+For me, this system makes tackling advanced subjects feel like a treasure hunt:
 
-Pick a concept that sounds cool -> Read the detailed conecpt page -> Navigate back to the full chapter for anything you don't understand -> Repeat.
+Pick a concept that sounds cool → Read the detailed concept page → Navigate back to the full chapter for anything you don't understand → Repeat.
 
 ## What the pipeline does
 
@@ -65,5 +65,3 @@ Setup is intended to take only a few minutes after Python and an OCR key are ava
 - This pipeline uses GLM-OCR from Z.AI. Support for different OCR providers is coming.
 
 - Automated specialist agent, Library Auditor and Maintenence, role. 
-
-

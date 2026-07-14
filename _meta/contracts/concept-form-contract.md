@@ -20,7 +20,7 @@ Specification for concept/topic pages (strategies, methods, models, metrics).
 ## Required Classification Predicates
 
 - `conforms_to::[[concept-form-contract]]`
-- `has_status::[[seed|growing|evergreen]]`
+- `has_status::[[lifecycle-predicate]]`
 - `in_domain::[[<domain-slug>]]`
 
 ## Required Relations
