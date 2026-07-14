@@ -10,7 +10,7 @@
 
 2. Run `python library.py doctor`, then load the ingest and GLM-OCR runtime skills.
 
-3. Read: `PAGE_SCHEMA.md`, `_meta/contracts/graph-vocabulary-quickref.md`, `index.md`, `log.md`.
+3. Read: `_meta/contracts/PAGE_SCHEMA.md`, `_meta/contracts/graph-vocabulary-quickref.md`, `index.md`, `log.md`.
 
 4. Confirm `.gitignore` covers `.env`, `.obsidian/`, `__pycache__/`, `*:Zone.Identifier`, `chunk*/`, `test*/`.
 

@@ -17,7 +17,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from pipeline_common import load_domain_config, validate_slug
 
-NEXT = ROOT / "agents" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py"
+NEXT = ROOT / "agents" / "orchestrator" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py"
 
 
 def run(*parts: str) -> int:
@@ -38,7 +38,7 @@ def env_value(name: str) -> str:
 
 def doctor(args: argparse.Namespace) -> int:
     checks: list[tuple[str, bool, str]] = []
-    checks.append(("Python 3.12", sys.version_info[:2] == (3, 12), sys.version.split()[0]))
+    checks.append(("Python 3.12+", sys.version_info[:2] >= (3, 12), sys.version.split()[0]))
     for module in ("pydantic", "requests", "pypdf", "yaml"):
         try:
             importlib.import_module(module)

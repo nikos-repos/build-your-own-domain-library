@@ -7,6 +7,5 @@
 5. Run `python library.py doctor`.
 6. Instruct the user that domain-library is ready and they can begin by dropping a file in the raw/dropbox.
 
-The workflow and stop conditions are in [the ingest operating skill](agents/skills/domain-library-ingest-pipeline/SKILL.md).
-
+The workflow and stop conditions are in [the ingest operating skill](agents/orchestrator/skills/domain-library-ingest-pipeline/SKILL.md).
 

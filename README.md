@@ -1,8 +1,8 @@
 # Build Your Own Domain Library
 
-An academic book ingestion and extraction pipeline for building a markdown knowledge base from PDFs. Inspired by the LLM Wiki pattern proposed by Andrej Karpathy, but revamped in a way that <u>**actually works.**</u> This gated pipeline that turns a raw source document (such as 900+ page books, and academic research articles) into **source-grounded, rich concept pages**.
+An academic book ingestion and extraction pipeline for building a markdown knowledge base from PDFs. Inspired by the LLM Wiki pattern proposed by Andrej Karpathy, but revamped in a way that **actually works.** This gated pipeline turns a raw source document (such as 900+ page books, and academic research articles) into **source-grounded, rich concept pages**.
 
-These are markdown Library pages where every single claim you can see is backed by a click-through embed of the exact source passage.
+Concept pages are markdown Library pages where every single claim you can see is backed by a click-through embed of the exact source passage.
 
 For me, this system makes tackling advanced subjects feel like a treasure hunt:
 
@@ -10,7 +10,7 @@ Pick a concept that sounds cool → Read the detailed concept page → Navigate 
 
 ## What the pipeline does
 
-This customizable workflow runs OCR, reconstructs raw source material into structured markdown, splits chapters, assigns stable block IDs to each text chunk, classfies text blocks, dispatches specialist extraction workers, verifies gathered evidence, scores candidate concepts, waits for human review, and writes final `PAGE_SCHEMA.md` compliant pages.
+This customizable workflow runs OCR, reconstructs raw source material into structured markdown, splits chapters, assigns stable block IDs to each text chunk, classifies text blocks, dispatches specialist extraction workers, verifies gathered evidence, scores candidate concepts, waits for human review, and writes final `PAGE_SCHEMA.md` compliant pages.
 
 ## Who this is for
 
@@ -20,14 +20,13 @@ This customizable workflow runs OCR, reconstructs raw source material into struc
 
 ## Quickstart
 
-Clone or this repo then run:
-
 ```bash
+git clone https://github.com/nikos-repos/build-your-own-domain-library.git
 cd build-your-own-domain-library
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env
-# Edit .env and replace ZHIPU_API_KEY=replace_me.
+# Edit .env and replace ZHIPU_API_KEY=replace_me with your key.
 .venv/bin/python library.py doctor --full
 ```
 
@@ -41,7 +40,7 @@ The only repository-owned secret is `ZHIPU_API_KEY` in the root `.env`. The OCR 
 
 Published pages are written under `concepts/`. A license-attributed mini example result is available in [`examples/demo-library`](examples/demo-library/README.md).
 
-The canonical phase workflow is [`agents/skills/domain-library-ingest-pipeline/SKILL.md`](agents/skills/domain-library-ingest-pipeline/SKILL.md). Page requirements are in [`PAGE_SCHEMA.md`](PAGE_SCHEMA.md), and security guidance is in [`SECURITY.md`](SECURITY.md).
+The canonical phase workflow is [`agents/orchestrator/skills/domain-library-ingest-pipeline/SKILL.md`](agents/orchestrator/skills/domain-library-ingest-pipeline/SKILL.md). Page requirements are in [`PAGE_SCHEMA.md`](PAGE_SCHEMA.md), and security guidance is in [`SECURITY.md`](SECURITY.md).
 
 Setup is intended to take only a few minutes after Python and an OCR key are available. Full ingestion time and OCR cost will scale with document size.
 
@@ -50,18 +49,18 @@ Setup is intended to take only a few minutes after Python and an OCR key are ava
 * **slug** — set ID of one source book (ex: `davey-2014`). Indexes everything by name.
 * **block ID** — `^<slug>-chNN-NNNN` anchor stamped on every substantive chunk in `raw/papers/<slug>/chapters/*.md`.
 * **unit** — one extraction work parcel (a chapter, or a ≤2000-line part of one).
-* **lane** — one specialist extraction role (definitions, formulas, examples,warnings, empirical context). One agent task per unit × lane.
-* **gate** — machine-written JSON under `_meta/extractions/<slug>/gates/`recording PASS/FAIL for a phase. Every phase writes one; every phase checksits predecessor's.
+* **lane** — one specialist extraction role (definitions, formulas, examples, warnings, empirical context). One agent task per unit × lane.
+* **gate** — machine-written JSON under `_meta/extractions/<slug>/gates/` recording PASS/FAIL for a phase. Every phase writes one; every phase checks its predecessor's.
 * **embed** — Obsidian transclusion `![[target#^block-id]]` that renders the source passage inside a concept page.
 
 ## Planned Upgrades
 
-- Next verison will publish entity pages. Entity mentions may remain in extraction JSON but no entity pages will be created. 
+- Entity pages. The current version records entity mentions in extraction JSON but does not create entity pages; a future version will publish them.
 
 - Automatic run everything mode (no human intervention at page creation).
 
-- Onboarding plugin for popular agent hanesses.
+- Onboarding plugin for popular agent harnesses.
 
 - This pipeline uses GLM-OCR from Z.AI. Support for different OCR providers is coming.
 
-- Automated specialist agent, Library Auditor and Maintenence, role. 
+- Automated specialist agent, Library Auditor and Maintenance, role.

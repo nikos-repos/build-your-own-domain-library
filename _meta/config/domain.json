@@ -8,7 +8,7 @@
     {
       "id": "defs",
       "profile": "defs",
-      "agent_profile": "defs.md",
+      "agent_profile": "domain-defs/defs.md",
       "output": "domain-definitions.md",
       "schema_output_suffix": "defs.json",
       "focus_category": "Definitions",
@@ -20,7 +20,7 @@
     {
       "id": "math",
       "profile": "math",
-      "agent_profile": "math.md",
+      "agent_profile": "domain-math/math.md",
       "output": "domain-math.md",
       "schema_output_suffix": "math.json",
       "focus_category": "Formulas",
@@ -32,7 +32,7 @@
     {
       "id": "examples",
       "profile": "examples",
-      "agent_profile": "examples.md",
+      "agent_profile": "domain-examples/examples.md",
       "output": "domain-examples.md",
       "schema_output_suffix": "examples.json",
       "focus_category": "Examples / Figures",
@@ -44,7 +44,7 @@
     {
       "id": "warnings",
       "profile": "warnings",
-      "agent_profile": "warnings.md",
+      "agent_profile": "domain-warnings/warnings.md",
       "output": "domain-warnings.md",
       "schema_output_suffix": "warnings.json",
       "focus_category": "Warnings / Caveats",
@@ -56,7 +56,7 @@
     {
       "id": "context",
       "profile": "context",
-      "agent_profile": "context.md",
+      "agent_profile": "domain-context/context.md",
       "output": "domain-empirical-context.md",
       "schema_output_suffix": "context.json",
       "focus_category": "Historical / Empirical References",

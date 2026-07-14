@@ -49,7 +49,7 @@ The dispatcher expects a Library repository with these conventional paths. Adapt
 | `index.md`                    | Library index updated after page creation.                                              |
 | `log.md`                      | Append-only ingestion/page-creation log.                                                |
 
-Before work, read `PAGE_SCHEMA.md`, `index.md`, and recent `log.md` entries. Treat raw source files as immutable, search the local library before creating a duplicate concept, use only predicates declared in `VOCABULARY_GUIDE.md`, and let Phase 5 maintain `index.md` and `log.md` after page writes. These are the retained runtime rules from the retired `llm-wiki` skill.
+Before work, read `_meta/contracts/PAGE_SCHEMA.md`, `index.md`, and recent `log.md` entries. Treat raw source files as immutable, search the local library before creating a duplicate concept, use only predicates declared in `_meta/contracts/VOCABULARY_GUIDE.md`, and let Phase 5 maintain `index.md` and `log.md` after page writes. These are the retained runtime rules from the retired `llm-wiki` skill.
 
 ## Naming schema
 
@@ -70,7 +70,7 @@ Native worker profile names may be prefixed by the project or domain, but genera
 
 ## Vocabulary and page-schema requirements
 
-All generated final concept pages must adhere to the public `PAGE_SCHEMA.md` and `VOCABULARY_GUIDE.md`.
+All generated final concept pages must adhere to the public `_meta/contracts/PAGE_SCHEMA.md` and `_meta/contracts/VOCABULARY_GUIDE.md`.
 
 Worker extraction drafts are intermediate artifacts. They do not need to be final PAGE_SCHEMA concept pages, but they must preserve evidence in a form that allows the page writer to create valid pages later.
 
@@ -117,7 +117,7 @@ Final concept pages must include, at minimum:
 - `extracted_from::[source]` for direct book-derived pages.
 - Deterministic YAML serialization with `quality_notes`.
 
-All generated final concept pages must adhere to the `PAGE_SCHEMA.md` and `VOCABULARY_GUIDE.md`.
+All generated final concept pages must adhere to the `_meta/contracts/PAGE_SCHEMA.md` and `_meta/contracts/VOCABULARY_GUIDE.md`.
 
 ## Hard red lines
 
@@ -157,5 +157,5 @@ All generated final concept pages must adhere to the `PAGE_SCHEMA.md` and `VOCAB
 - `references/specialist-dispatch-protocol.md` — named-lane specialist dispatch architecture.
 - `references/naming-schema.md` — output, unit, and native-agent profile names.
 - `references/test-suite.md` — executable tests.
-- `PAGE_SCHEMA.md` — final page structure and evidence-link rules.
-- `VOCABULARY_GUIDE.md` — controlled predicate vocabulary and wikilink rules.
+- `_meta/contracts/PAGE_SCHEMA.md` — final page structure and evidence-link rules.
+- `_meta/contracts/VOCABULARY_GUIDE.md` — controlled predicate vocabulary and wikilink rules.

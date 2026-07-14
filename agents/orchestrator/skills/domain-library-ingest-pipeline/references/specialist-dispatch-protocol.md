@@ -2,7 +2,7 @@
 
 1. Run `python3 _meta/scripts/library_phase33_dispatch.py --slug "$SLUG" --prepare`.
 2. Treat `specialist-dispatch-plan.json` and its generated assignment files as the source of truth.
-3. For every task, load the named prompt contract from `_meta/agents/`, use the current operator's native subagent mechanism, and require both `markdown_output` and `schema_output`.
+3. For every task, load the named prompt contract from `agents/library-workers/`, use the current operator's native subagent mechanism, and require both `markdown_output` and `schema_output`.
 4. Write `_meta/extractions/$SLUG/dispatch-result.json` in either supported shape:
 
 ```json

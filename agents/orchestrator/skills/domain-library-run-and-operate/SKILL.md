@@ -21,13 +21,13 @@ guesses the next command:
 
 ```bash
 # What do I do next for this book?
-python3 agents/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug>
+python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug>
 
 # Status of every ingest in the library:
-python3 agents/skills/domain-library-run-and-operate/scripts/pipeline_next.py --all
+python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --all
 
 # Machine-readable (for agents):
-python3 agents/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug> --json
+python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug> --json
 ```
 
 It reads `_meta/extractions/<slug>/pipeline-state.json` plus the gate files,
@@ -52,7 +52,7 @@ python3 _meta/scripts/library_phase<N>_<name>.py --slug "$SLUG" [--wiki "$WIKI"]
   the script's location.
 - Exit 0 = gate PASS written. Exit 2 = gate FAIL written with the reason
   inside. Non-gate crash = bug; report it.
-- Full per-phase table with gates: `agents/skills/domain-library-ingest-pipeline/SKILL.md`
+- Full per-phase table with gates: `agents/orchestrator/skills/domain-library-ingest-pipeline/SKILL.md`
   (the operating contract — canonical). Reference detail:
   `references/runbook-full.md`, `references/phase-gates.md`.
 

@@ -1,6 +1,6 @@
 # Graph Vocabulary Quickref
 
-Use this quickref for Library extraction workers. It summarizes the `PAGE_SCHEMA.md` and `VOCABULARY_GUIDE.md` requirements for worker outputs.
+Use this quickref for Library extraction workers. It summarizes the `_meta/contracts/PAGE_SCHEMA.md` and `_meta/contracts/VOCABULARY_GUIDE.md` requirements for worker outputs.
 
 Extraction workers produce intermediate extraction artifacts, not final concept pages. They must preserve source-grounded evidence and use only declared vocabulary when proposing candidate relations. The compiler agent is responsible for producing final PAGE_SCHEMA-compliant concept pages.
 

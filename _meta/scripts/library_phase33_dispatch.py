@@ -183,7 +183,7 @@ def active_agent_profile_dir() -> Path:
     override = os.environ.get("AGENT_PROFILE_DIR")
     if override:
         return Path(override).expanduser().resolve()
-    return (SCRIPT_DIR.parents[1] / "_meta" / "agents").resolve()
+    return (SCRIPT_DIR.parents[1] / "agents" / "library-workers").resolve()
 
 
 def validate_agent_profiles() -> dict[str, dict[str, str]]:
@@ -265,7 +265,7 @@ def render_assignment(wiki: Path, slug: str, unit: ExtractionUnit, lane: str) ->
 # Evidence hygiene
 - Block embeds must be exactly `> ![[{embed_target}#^blockID]]`; copy `blockID` without square brackets and without duplicating closing brackets.
 - Provenance Relations must target chapter block links, e.g. `- extracted_from::[[{embed_target}#^blockID|^chNN-NNNN]]`; never use `[[{slug}]]`, `[[source]]`, a unit id, or a partial path as evidence.
-- Use only predicates allowed by `PAGE_SCHEMA.md`; if a concept-only relation is explicitly source-supported, use `relates_to::`, not `related_to::`.
+- Use only predicates allowed by `_meta/contracts/PAGE_SCHEMA.md`; if a concept-only relation is explicitly source-supported, use `relates_to::`, not `related_to::`.
 - JSON `block_id` and `block_ids` values must be bare IDs like `{slug}-chNN-NNNN`, with no leading `^`, brackets, aliases, or path fragments.
 
 # Acceptance

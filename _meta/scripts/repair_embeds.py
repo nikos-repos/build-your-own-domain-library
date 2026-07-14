@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """One-shot (re-runnable) repair: normalize every block embed/link in wiki
-pages to the canonical form defined in PAGE_SCHEMA.md "Embeds & Evidence
+pages to the canonical form defined in _meta/contracts/PAGE_SCHEMA.md "Embeds & Evidence
 Links" — vault-absolute chapter path + `#^block-id`.
 
 Handles every malformation class produced by earlier pipeline generations:

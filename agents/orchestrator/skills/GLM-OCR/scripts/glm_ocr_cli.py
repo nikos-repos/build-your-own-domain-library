@@ -25,7 +25,7 @@ try:
     import requests
 except ImportError:
     print(
-        "Error: Missing dependency 'requests'. Install with: pip install -r scripts/requirements.txt",
+        "Error: Missing dependency 'requests'. Install with: pip install -r requirements.txt (repo root)",
         file=sys.stderr,
     )
     sys.exit(2)
@@ -58,8 +58,12 @@ def _load_env():
     if _env_loaded:
         return
 
-    env_file = Path(__file__).resolve().parents[4] / ".env"
-    if env_file.exists():
+    env_file = None
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "library.py").exists() and (parent / "_meta").is_dir():
+            env_file = parent / ".env"
+            break
+    if env_file is not None and env_file.exists():
         try:
             with open(env_file, "r", encoding="utf-8") as f:
                 for line in f:

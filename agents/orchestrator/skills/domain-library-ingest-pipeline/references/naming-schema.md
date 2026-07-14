@@ -30,10 +30,10 @@ Phase 3.2 size splitting emits `*-partNN.md` files from previously unsplit `chNN
 
 | Lane       | Global agent profile       |
 | ---------- | -------------------------- |
-| `defs`     | `_meta/agents/defs.md`     |
-| `math`     | `_meta/agents/math.md`     |
-| `examples` | `_meta/agents/examples.md` |
-| `warnings` | `_meta/agents/warnings.md` |
-| `context`  | `_meta/agents/context.md`  |
+| `defs`     | `agents/library-workers/domain-defs/defs.md`     |
+| `math`     | `agents/library-workers/domain-math/math.md`     |
+| `examples` | `agents/library-workers/domain-examples/examples.md` |
+| `warnings` | `agents/library-workers/domain-warnings/warnings.md` |
+| `context`  | `agents/library-workers/domain-context/context.md`  |
 
-Lane worker profiles under `_meta/agents/<lane>.md` (or `AGENT_PROFILE_DIR`) are the only Phase 3.3 sources of truth. Task IDs remain deterministic CamelCase handles derived from `<lane><unit_id>`, while durable idempotency keys remain `<slug>:<unit_id>:<lane>`.
+Lane worker profiles under `agents/library-workers/domain-<lane>/<lane>.md` (or `AGENT_PROFILE_DIR`) are the only Phase 3.3 sources of truth. Task IDs remain deterministic CamelCase handles derived from `<lane><unit_id>`, while durable idempotency keys remain `<slug>:<unit_id>:<lane>`.

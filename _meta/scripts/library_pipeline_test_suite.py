@@ -890,7 +890,7 @@ def test_phase33_prepare_writes_dispatch_payload(tmp: Path) -> None:
     assert set(plan["agent_profiles"]) == set(plan["agents"])
     assert "task_tool_payload" not in plan
     first_invocation = plan["chapter_task_payload_batches"][0]["agent_invocations"][0]
-    assert first_invocation["profile"] == "defs.md"
+    assert first_invocation["profile"] == "domain-defs/defs.md"
     assert len(first_invocation["expected_outputs"]) == 2
     assert plan["task_count"] == 5
     assert {task["lane"] for task in plan["tasks"]} == {"defs", "math", "examples", "warnings", "context"}
@@ -913,10 +913,13 @@ def test_phase33_prepare_rejects_missing_native_agent(tmp: Path) -> None:
     prepare_phase33_fixture(wiki, slug)
     agent_dir = wiki.parent / "lane-agents"
     agent_dir.mkdir()
-    for profile in (SCRIPT_DIR.parents[1] / "_meta" / "agents").glob("*.md"):
-        (agent_dir / profile.name).write_text(profile.read_text(encoding="utf-8"), encoding="utf-8")
+    profile_root = SCRIPT_DIR.parents[1] / "agents" / "library-workers"
+    for profile in profile_root.rglob("*.md"):
+        target = agent_dir / profile.relative_to(profile_root)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(profile.read_text(encoding="utf-8"), encoding="utf-8")
     os.environ["AGENT_PROFILE_DIR"] = str(agent_dir)
-    (agent_dir / "math.md").unlink()
+    (agent_dir / "domain-math" / "math.md").unlink()
     proc = run([sys.executable, str(SCRIPT_DIR / "library_phase33_dispatch.py"), "--slug", slug, "--wiki", str(wiki), "--prepare"])
     assert proc.returncode == 2
     assert "agent profile for math missing or empty" in proc.stderr
@@ -1580,7 +1583,7 @@ def write_runner_state(wiki: Path, slug: str, *, status: str = "READY_FOR_2.3", 
 
 
 def run_pipeline_next(wiki: Path, slug: str) -> subprocess.CompletedProcess:
-    script = SCRIPT_DIR.parents[1] / "agents" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py"
+    script = SCRIPT_DIR.parents[1] / "agents" / "orchestrator" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py"
     return run([sys.executable, str(script), "--wiki", str(wiki), "--slug", slug])
 
 

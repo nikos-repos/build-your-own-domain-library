@@ -1,6 +1,6 @@
 # Graph Vocabulary Quickref
 
-Use this quickref for Domain Library extraction workers. Read the full `VOCABULARY_GUIDE.md` only when changing vocabulary policy.
+Use this quickref for Domain Library extraction workers. Read the full `_meta/contracts/VOCABULARY_GUIDE.md` only when changing vocabulary policy.
 
 ## Predicate syntax
 

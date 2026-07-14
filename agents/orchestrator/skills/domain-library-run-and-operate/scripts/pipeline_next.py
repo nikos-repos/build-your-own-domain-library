@@ -11,9 +11,9 @@ JSONs and prints the single canonical next action, or a DRIFT report when the
 recorded state and the on-disk gates disagree.
 
 Usage (from the wiki/library root):
-    python3 agents/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug>
-    python3 agents/skills/domain-library-run-and-operate/scripts/pipeline_next.py --all
-    python3 agents/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug> --json
+    python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug>
+    python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --all
+    python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug> --json
 
 Exit codes: 0 = clear next step; 2 = drift/blocked (fix before proceeding);
 1 = usage error. Fail closed: an unknown status is DRIFT, not a guess.
@@ -25,12 +25,12 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(ROOT / "_meta" / "scripts"))
 from pipeline_common import validate_slug
 
 # status written by each runner -> (next owner, exact next command template)
-# Command strings mirror agents/skills/domain-library-ingest-pipeline/SKILL.md ("Active
+# Command strings mirror agents/orchestrator/skills/domain-library-ingest-pipeline/SKILL.md ("Active
 # command table"); if you change a runner's CLI, update both in one change.
 NEXT = {
     "READY_FOR_2": "python3 _meta/scripts/library_phase2_chapters.py --slug {slug}",
@@ -43,7 +43,7 @@ NEXT = {
     "READY_FOR_3.2": "python3 _meta/scripts/library_phase32_size_split.py --slug {slug}",
     "READY_FOR_3.3": (
         "python3 _meta/scripts/library_phase33_dispatch.py --slug {slug} --prepare\n"
-        "  then: dispatch specialist agents per agents/skills/domain-library-ingest-pipeline/references/specialist-dispatch-protocol.md\n"
+        "  then: dispatch specialist agents per agents/orchestrator/skills/domain-library-ingest-pipeline/references/specialist-dispatch-protocol.md\n"
         "  then: python3 _meta/scripts/library_phase33_dispatch.py --slug {slug} --record "
         "--dispatch-result _meta/extractions/{slug}/dispatch-result.json"
     ),

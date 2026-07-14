@@ -1,17 +1,17 @@
-# Domain-[x]-Library Page Schema.
+# Domain Library Page Schema.
 
 ## Your Domain.
 
-###### [Insert a short description of your intended use-case here.]
+The domain summary is configured in `_meta/config/domain.json` under `domain_summary`.
 
 EX:
 
-*"Quantitative finance, statistical modeling, live trading systems, market microstructure, risk management, and agent-based research infrastructure."*
+*"Quantitative finance: statistical modeling, live trading systems, market microstructure, risk management, and agent-based research infrastructure."* (my actual use-case).
 
 ## Naming Conventions.
 
 - Filenames: lowercase, hyphenated, no space.
-  - `mean-reversion-strategy.md`, not `Mean Reversion Strategy.md`.
+  - `scientific-method-overview.md`, not `Scientific Method Overview.md`.
 - Multi-word, 2-7 words.
   - Single-word filenames forbidden.
 - External wiki refs are marked with `↗` trailing the closing brackets:
@@ -85,7 +85,7 @@ scope: private | shared
 
 Predicates are **underscored**, lowercase, and preferred to be multi-word. 
 
-[*See NODE_VOCABULARY.md for full guide*]
+[*See _meta/contracts/VOCABULARY_GUIDE.md for full guide*]
 
 **Classification (top-of-page block, every node):**
 
@@ -147,7 +147,7 @@ Rules enforced by `wiki_integrity.py`
 
 ## Form Contracts.
 
-Each node type is defined by a real wiki page at `_meta/contracts/<type>-form-contract.md`.
+Pages are concepts and conform to `_meta/contracts/concept-form-contract.md`. 
 
 ## Privacy Policy
 

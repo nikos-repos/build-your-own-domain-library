@@ -20,7 +20,7 @@ echo "== 1. personal absolute paths in live docs/scripts =="
 # /home/<user> paths make runbooks wrong for everyone else. History files
 # (.orig snapshots, migration-plan, the audit report) are exempt: they are
 # records of the past, not instructions.
-HITS=$(grep -rn "/home/[a-z]*/" --include="*.py" --include="*.md" --include="*.sh" _meta agents/skills ./*.md 2>/dev/null \
+HITS=$(grep -rn "/home/[a-z]*/" --include="*.py" --include="*.md" --include="*.sh" _meta agents ./*.md 2>/dev/null \
   | grep -v -e "Zone.Identifier" -e "\.orig" -e "docs/history/" -e "failure-archaeology" -e "docs_drift_check" -e "migration-progress" || true)
 if [ -n "$HITS" ]; then echo "$HITS"; note "personal absolute paths above — replace with \$WIKI/relative paths"; fi
 
@@ -29,7 +29,7 @@ echo "== 2. banned 'source' embed target in live contracts/prompts/templates =="
 # Scope: docs that INSTRUCT extraction (contracts, prompts, templates, the
 # operating skills). The domain-library-* stewardship skills discuss the form
 # as history and are exempt, as are lines that quote it in order to ban it.
-HITS=$(grep -rn '\[\[source#' _meta/contracts _meta/templates agents/skills 2>/dev/null \
+HITS=$(grep -rn '\[\[source#' _meta/contracts _meta/templates agents 2>/dev/null \
   | grep -v -e "Zone.Identifier" -e "\.orig" -e "Never target" -e "never target" -e "rather than" -e "docs_drift_check" || true)
 if [ -n "$HITS" ]; then echo "$HITS"; note "banned [[source# embed form in a live instruction doc"; fi
 
@@ -38,12 +38,12 @@ echo "== 3. smoke-test count claims vs actual =="
 # narratives in stewardship skills legitimately cite old counts.
 ACTUAL=$(grep -c "^def test_" _meta/scripts/library_pipeline_test_suite.py 2>/dev/null || echo 0)
 echo "actual test functions: $ACTUAL"
-for CLAIM in $(grep -rho "[0-9]\+ \(smoke \)\?tests" README.md agents/skills/domain-library-ingest-pipeline 2>/dev/null | grep -o "^[0-9]*" | sort -u); do
+for CLAIM in $(grep -rho "[0-9]\+ \(smoke \)\?tests" README.md agents/orchestrator/skills/domain-library-ingest-pipeline 2>/dev/null | grep -o "^[0-9]*" | sort -u); do
   if [ "$CLAIM" != "$ACTUAL" ]; then note "a doc claims $CLAIM tests; the suite defines $ACTUAL"; fi
 done
 
 echo "== 4. referenced pipeline scripts that do not exist =="
-for f in $(grep -rho "_meta/scripts/[a-z0-9_]*\.py" ./*.md agents/skills _meta/contracts 2>/dev/null | sort -u); do
+for f in $(grep -rho "_meta/scripts/[a-z0-9_]*\.py" ./*.md agents _meta/contracts 2>/dev/null | sort -u); do
   [ -f "$f" ] || note "docs reference $f but it does not exist"
 done
 
@@ -59,7 +59,7 @@ echo "== 6. private-era banned strings =="
 # docs or code. Allowlisted: docs/history/**, docs/architecture-lessons.md,
 # migration-progress.md (they record the migration itself), and this script.
 BANNED='Quant-Library|quantlib_|quantdefs|quantmath|quantexamples|quantwarnings|quantecontext|OMP-Quant|Niko|/home/niko|C:\\Users|~/\.omp'
-HITS=$(grep -rnE "$BANNED" --include="*.py" --include="*.md" --include="*.sh" --include="*.json" _meta agents/skills ./*.md 2>/dev/null \
+HITS=$(grep -rnE "$BANNED" --include="*.py" --include="*.md" --include="*.sh" --include="*.json" _meta agents ./*.md 2>/dev/null \
   | grep -v -e "docs/history/" -e "docs/architecture-lessons.md" -e "migration-progress" -e "docs_drift_check" || true)
 if [ -n "$HITS" ]; then echo "$HITS"; note "private-era banned string above — remove before release"; fi
 

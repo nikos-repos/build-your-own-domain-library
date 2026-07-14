@@ -4,7 +4,7 @@
 
 | Phase | Pass condition | Fail action |
 |---|---|---|
-| 0 | Required agents/skills/files loaded; `.gitignore` safe | HALT and report missing item |
+| 0 | Required agent skills/files loaded; `.gitignore` safe | HALT and report missing item |
 | 1 | `_meta/extractions/<slug>/gates/phase-1.json` status `PASS`; API OCR JSON is valid; all GLM crop/image URLs are local files under `glmocr_output/imgs/` | HALT; do not fallback to MinerU/self-hosted automatically; rerun generic Phase 1 runner |
 | 1.5 | Resolver returns valid API JSON/images; `book_fidelity.md`; fidelity ≥95%; zero missing local images; `_meta/extractions/<slug>/gates/phase-1.5.json` status `PASS` | Fix OCR/output mapping or assets; rerun reconstruction; do not split chapters |
 | 2.1 | `_meta/extractions/<slug>/gates/phase-2.1.json` status `PASS`; boundaries detected from `book_fidelity.md`; manual TOC boundaries captured in `chapter-boundaries.json` when needed; fallback chunking fails closed | Create/fix `chapter-boundaries.json`; do not split semantic chapters as fixed chunks |

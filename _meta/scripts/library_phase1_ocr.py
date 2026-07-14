@@ -48,7 +48,7 @@ DEFAULT_WIKI = Path(os.environ.get("WIKI_PATH", SCRIPT_DIR.parents[1]))
 DEFAULT_GLM_CLI = Path(
     os.environ.get(
         "GLM_OCR_CLI",
-        str(SCRIPT_DIR.parents[1] / "agents" / "skills" / "GLM-OCR" / "scripts" / "glm_ocr_cli.py"),
+        str(SCRIPT_DIR.parents[1] / "agents" / "orchestrator" / "skills" / "GLM-OCR" / "scripts" / "glm_ocr_cli.py"),
     )
 )
 DEFAULT_MAX_BYTES = 45 * 1024 * 1024
