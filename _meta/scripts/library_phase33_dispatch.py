@@ -26,15 +26,16 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import library_phase31_source_index as phase31
-from extraction_units import ExtractionUnit, discover_units
+from _meta.scripts import library_phase31_source_index as phase31
+from _meta.scripts.extraction_units import ExtractionUnit, discover_units
 
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 RUNNER = "library_phase33_dispatch.py"
 
 # Lane identity comes from _meta/config/domain.json; populated below after imports.
@@ -42,7 +43,7 @@ LANES: dict[str, dict[str, Any]] = {}
 
 ORCHESTRATOR_OUTPUTS = ("orchestrator-vision-enrichment.md", "orchestrator-source-index.md")
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     extraction_root,
     gate_path,
     load_state,
@@ -55,7 +56,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 
 def _load_lanes(wiki: Path) -> None:
@@ -183,7 +184,7 @@ def active_agent_profile_dir() -> Path:
     override = os.environ.get("AGENT_PROFILE_DIR")
     if override:
         return Path(override).expanduser().resolve()
-    return (SCRIPT_DIR.parents[1] / "agents" / "library-workers").resolve()
+    return (default_wiki() / "agents" / "library-workers").resolve()
 
 
 def validate_agent_profiles() -> dict[str, dict[str, str]]:
@@ -257,7 +258,7 @@ def render_assignment(wiki: Path, slug: str, unit: ExtractionUnit, lane: str) ->
 2. Read the two orchestrator prerequisite files before writing.
 3. Read only the source chapter ranges needed for same-slug block IDs in the source index category `{spec['focus_category']}` plus any full-chapter search explicitly required by the lane-agent profile.
 4. Write `{rel(markdown_output, wiki)}` following the lane-agent profile exactly.
-5. Also write `{rel(schema_output, wiki)}` as a real JSON object shaped for `_meta/schemas/extraction_schema.py`: `source`, `chapter`, `chapter_title`, `extracted_at`, `concepts`, `entities`, `formulas`, and `claims`.
+5. Also write `{rel(schema_output, wiki)}` as a real JSON object shaped for `_meta/scripts/schemas/extraction_schema.py`: `source`, `chapter`, `chapter_title`, `extracted_at`, `concepts`, `entities`, `formulas`, and `claims`.
 6. Every definition/formula/claim/block reference in both outputs must cite actual same-slug block IDs from `{rel(source_index, wiki)}` and the chapter text. Do not invent quotes, equations, examples, entities, relationships, or block IDs.
 7. If the profile's requested content is not present in this unit, say that explicitly in the markdown with the closest relevant source evidence; do not fabricate replacement content.
 8. Skip all project-wide commands, gates, tests, formatters, and audits. This is a content extraction task only.
@@ -265,7 +266,7 @@ def render_assignment(wiki: Path, slug: str, unit: ExtractionUnit, lane: str) ->
 # Evidence hygiene
 - Block embeds must be exactly `> ![[{embed_target}#^blockID]]`; copy `blockID` without square brackets and without duplicating closing brackets.
 - Provenance Relations must target chapter block links, e.g. `- extracted_from::[[{embed_target}#^blockID|^chNN-NNNN]]`; never use `[[{slug}]]`, `[[source]]`, a unit id, or a partial path as evidence.
-- Use only predicates allowed by `_meta/contracts/PAGE_SCHEMA.md`; if a concept-only relation is explicitly source-supported, use `relates_to::`, not `related_to::`.
+- Use only predicates allowed by `PAGE_SCHEMA.md`; if a concept-only relation is explicitly source-supported, use `relates_to::`, not `related_to::`.
 - JSON `block_id` and `block_ids` values must be bare IDs like `{slug}-chNN-NNNN`, with no leading `^`, brackets, aliases, or path fragments.
 
 # Acceptance
@@ -641,9 +642,8 @@ def record(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Prepare or record Domain Library Phase 3.3 specialist dispatch")
+    ap = pipeline_parser("Prepare or record Domain Library Phase 3.3 specialist dispatch", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--prepare", action="store_true", help="Validate prerequisites and write agent invocation payload")
     mode.add_argument("--record", action="store_true", help="Record runtime agent job IDs and write PASS gate")

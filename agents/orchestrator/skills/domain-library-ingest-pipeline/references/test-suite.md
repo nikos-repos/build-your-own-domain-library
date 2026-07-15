@@ -26,6 +26,12 @@ _meta/scripts/library_pipeline_test_suite.py
 | `test_phase30_unresolved_marker_fails`                       | `VISION_*_NEEDED` markers cannot advance without real structured resolution                                                                                                                                |
 | `test_phase30_accepts_resolved_marker_log`                   | completed structured vision logs allow marker-bearing units to advance                                                                                                                                     |
 | `test_phase31_writes_source_index_gate_and_json`             | Phase 3.1 state/gate/report semantics, Markdown index, hidden JSON, and category counts                                                                                                                    |
+| `test_phase31_classifier_regression`                         | Phase 3.1 classification priority, representative categories, and the rule that citations/wikilinks are not formulas                                                                                      |
+| `test_public_layout_entrypoints_resolve`                     | public CLI, state runner, GLM-OCR CLI, and root `.env` paths match the shipped `agents/orchestrator/skills` layout                                                                                           |
+| `test_installed_command_works_from_a_nested_directory`       | editable install resolves the repository root without fixed parent offsets                                                                                                                                    |
+| `test_python_support_policy`                                 | Python 3.12 and 3.13 are supported; 3.11 remains rejected                                                                                                                                                   |
+| `test_production_code_has_no_path_bootstraps`                | production modules cannot reintroduce `sys.path.insert` or fixed `parents[n]` roots                                                                                                                         |
+| `test_docs_drift_checker_tracks_live_tree`                   | drift checking scans the actual live skill tree and verifies its dynamic test catalog                                                                                                                       |
 | `test_phase31_rejects_wrong_slug_blocks`                     | wrong-source block IDs cannot enter source indexes                                                                                                                                                         |
 | `test_phase31_rejects_duplicate_block_ids`                   | source indexes require exact one-to-one block coverage                                                                                                                                                     |
 | `test_phase31_supports_split_part_units`                     | split part units get their own source indexes                                                                                                                                                              |
@@ -63,19 +69,30 @@ _meta/scripts/library_pipeline_test_suite.py
 | `test_integrity_detects_target_missing_and_ambiguous`        | dead and ambiguous embed targets are classified, not ignored                                                                                                                                               |
 | `test_integrity_detects_malformed_forms`                     | template-literal/bracketed embed junk is classified `malformed`                                                                                                                                            |
 | `test_integrity_suffix_match_and_basename`                   | vault path-suffix and unique-basename resolution semantics match Obsidian's                                                                                                                                |
+| `test_pipeline_next_accepts_real_gate_paths`                 | state inspection accepts safe, matching gate paths                                                                                                                                                          |
+| `test_pipeline_next_detects_missing_gate`                    | state inspection fails closed when a recorded gate is missing                                                                                                                                               |
+| `test_pipeline_next_detects_gate_phase_mismatch`             | state inspection rejects a gate whose declared phase disagrees with its filename/state key                                                                                                                  |
+| `test_pipeline_next_rejects_unknown_state`                   | unknown state-machine statuses are reported as drift                                                                                                                                                         |
+| `test_slug_traversal_rejected_before_filesystem_write`       | untrusted slugs cannot escape the library root                                                                                                                                                               |
+| `test_source_hash_collision_rejected`                        | one slug cannot silently switch to a different source PDF                                                                                                                                                    |
+| `test_phase1_chunk_and_resume_behavior`                      | Phase 1 chunks oversized PDFs and resumes only from valid successful chunk JSON                                                                                                                              |
+| `test_atomic_json_write_leaves_no_partial_file`              | machine state/report JSON is replaced atomically                                                                                                                                                             |
+| `test_ocr_download_retries_and_bounds_bytes`                 | OCR asset downloads retry transient failures and enforce the byte ceiling                                                                                                                                   |
+| `test_alternate_three_lane_domain_configuration`            | lane configuration is loaded from `domain.json` rather than fixed to the shipped five-lane example                                                                                                          |
+| `test_finalization_requires_audit_and_reaches_done`          | READY_FOR_POST advances to DONE only after audit and grounding QA pass                                                                                                                                       |
 
 ## Commands
 
 ```bash
 cd /path/to/build-your-own-domain-library
 python3 -m py_compile _meta/scripts/*.py
-python3 _meta/scripts/library_pipeline_test_suite.py
+domain-library run library_pipeline_test_suite
 ```
 
 ## Required before final completion on real ingest
 
 ```bash
-python3 _meta/scripts/library_audit.py \
+domain-library run library_audit \
   --slug "$SLUG" \
   --wiki "$WIKI_PATH" \
   --report "_meta/reports/audit-$SLUG-$(date +%Y%m%d).json"

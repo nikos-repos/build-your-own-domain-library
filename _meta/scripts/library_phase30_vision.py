@@ -14,15 +14,16 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-from extraction_units import ExtractionUnit, discover_units
-from verify_image_refs import verify as verify_image_refs
+from _meta.scripts.extraction_units import ExtractionUnit, discover_units
+from _meta.scripts.verify_image_refs import verify as verify_image_refs
 
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 VISION_MARKER_RE = re.compile(r"\b(?P<marker>VISION_[A-Z0-9_]+_NEEDED)\b")
 BLOCK_ID_RE = re.compile(r"\^(?P<block>[A-Za-z0-9][A-Za-z0-9._-]*-ch\d{2}-\d{4,})\b")
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\((?P<ref>[^)]+)\)")
@@ -31,7 +32,7 @@ KEY_VALUE_RE = re.compile(r"^(?P<key>[A-Za-z_][A-Za-z0-9_-]*):\s*(?P<value>.*)$"
 REMOTE_PREFIXES = ("http://", "https://", "data:")
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     extraction_root,
     gate_path,
     load_state,
@@ -43,7 +44,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 RUNNER = "library_phase30_vision.py"
 
@@ -218,9 +219,8 @@ def ensure_log(path: Path, slug: str, unit: ExtractionUnit, markers: list[dict[s
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 3.0 hard vision-enrichment gate")
+    ap = pipeline_parser("Run Domain Library Phase 3.0 hard vision-enrichment gate", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     return ap.parse_args()
 
 

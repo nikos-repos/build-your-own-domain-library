@@ -7,7 +7,7 @@ in the annotated chapter files. Catches dead embeds at extraction time,
 not during audit.
 
 Usage:
-    python3 _meta/scripts/blockid_validator.py \
+    domain-library run blockid_validator \
         --slug example-public-domain-book \
         --extractions _meta/extractions/example-public-domain-book/ \
         --chapters raw/papers/example-public-domain-book/chapters/
@@ -18,7 +18,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from pipeline_common import write_json
+from domain_library.pipeline.common import write_json
 from typing import Set, List, Dict
 
 

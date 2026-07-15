@@ -21,13 +21,13 @@ guesses the next command:
 
 ```bash
 # What do I do next for this book?
-python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug>
+domain-library next --slug <slug>
 
 # Status of every ingest in the library:
-python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --all
+domain-library status
 
 # Machine-readable (for agents):
-python3 agents/orchestrator/skills/domain-library-run-and-operate/scripts/pipeline_next.py --slug <slug> --json
+domain-library status --slug <slug>
 ```
 
 It reads `_meta/extractions/<slug>/pipeline-state.json` plus the gate files,
@@ -101,9 +101,9 @@ CONFIRM → confirm) → 5 → post (grounding QA + audit)`. Phases 1/1.5 and
 - **log.md and index.md are maintained by the machinery** (`append_log` on
   every state write; Phase 5 updates the index; `rebuild_index.py`
   regenerates it in full). Don't hand-edit; if the index looks stale, rerun
-  `python3 _meta/scripts/rebuild_index.py`.
+  `domain-library run rebuild_index`.
 - **Disk hygiene after a successful ingest:**
-  `python3 _meta/scripts/prune_raw.py --slug <slug> --apply` deletes
+  `domain-library run prune_raw --slug <slug> --apply` deletes
   recreatable PDF chunks once fidelity has PASSed (dry-run without
   `--apply`).
 - **Completion claim** requires the post-phase: grounding QA + audit exit 0

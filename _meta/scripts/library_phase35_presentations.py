@@ -14,17 +14,18 @@ import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import library_phase31_source_index as phase31
-import team_presentation_assembler as assembler
-import wiki_integrity
-from extraction_units import ExtractionUnit, discover_units
+from _meta.scripts import library_phase31_source_index as phase31
+from _meta.scripts import team_presentation_assembler as assembler
+from _meta.scripts import wiki_integrity
+from _meta.scripts.extraction_units import ExtractionUnit, discover_units
 
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 RUNNER = "library_phase35_presentations.py"
 CITED_BLOCK_RE = re.compile(r"\^([a-z0-9-]+-ch\d+-\d+)")
 EMBED_RE = re.compile(r"!\[\[[^\]]+#\^([a-z0-9-]+-ch\d+-\d+)[^\]]*\]\]")
@@ -49,7 +50,7 @@ L009_MONOPOLY_BODY_SHARE = 0.40
 L009_EVIDENCE_INDEX_TOTAL_SHARE_NOTICE = 0.60
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     SLOP_RE,
     extraction_root,
     gate_path,
@@ -64,7 +65,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 
 def write_state(wiki: Path, slug: str, status: str, current_phase: str, completed: list[str], gates: dict[str, str]) -> None:
@@ -472,9 +473,8 @@ def run_presentations(wiki: Path, slug: str) -> tuple[dict[str, Any], list[str]]
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 3.5 team presentation assembly gate")
+    ap = pipeline_parser("Run Domain Library Phase 3.5 team presentation assembly gate", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     return ap.parse_args()
 
 

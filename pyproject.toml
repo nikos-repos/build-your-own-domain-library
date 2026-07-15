@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools==83.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "domain-library"
+version = "0.1.0"
+description = "Gate-controlled source-grounded domain library pipeline"
+requires-python = ">=3.12"
+dependencies = [
+  "pydantic==2.12.5",
+  "pypdf==5.9.0",
+  "PyYAML==6.0.2",
+  "requests==2.32.4",
+]
+
+[project.scripts]
+domain-library = "library:main"
+
+[tool.setuptools]
+packages = ["domain_library", "domain_library.pipeline", "_meta", "_meta.scripts", "_meta.scripts.schemas"]
+py-modules = ["library"]

@@ -3,27 +3,31 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from domain_library.paths import default_wiki, repository_root
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import scoring_layer
-import wiki_integrity
-from extraction_units import discover_units
-from resolve_ocr_output import resolve
-from verify_image_refs import verify as verify_images
+from _meta.scripts import scoring_layer
+from _meta.scripts import wiki_integrity
+from _meta.scripts import library_phase31_source_index as phase31
+from _meta.scripts.extraction_units import discover_units
+from _meta.scripts.resolve_ocr_output import resolve
+from _meta.scripts.verify_image_refs import verify as verify_images
 
 
 def run(cmd: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess:
     # LIBRARY_SMOKE_RUNNING stops scripts under test (e.g. phase 5's
     # publish hook) from re-invoking this suite recursively.
     env = dict(os.environ, LIBRARY_SMOKE_RUNNING="1")
+    root = str(repository_root(Path(__file__)))
+    env["PYTHONPATH"] = root + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=30, env=env)
 
 
@@ -659,6 +663,74 @@ def test_phase31_writes_source_index_gate_and_json(tmp: Path) -> None:
     assert state["status"] == "READY_FOR_3.2"
 
 
+def test_phase31_classifier_regression(tmp: Path) -> None:
+    cases = {
+        r"$x_t = r_t - b_t$": "Formulas",
+        "import pandas as pd": "Examples / Figures",
+        "Market maker: A firm that continuously quotes both sides.": "Definitions",
+        "However, this estimate is unstable in small samples.": "Warnings / Caveats",
+        "According to prior research, the effect persists.": "Historical / Empirical References",
+        "Figure 2 shows the fitted values.": "Examples / Figures",
+        "# Methods": "Transitional / Structural",
+        "A policy contains rules that govern choices whenever several options remain available to the decision maker.": "Definitions",
+    }
+    assert {text: phase31.classify(text) for text in cases} == cases
+    assert phase31.classify("See [[related-concept]] and [Author, 2020].") != "Formulas"
+    assert phase31.classify("This repeatable method remains useful to a decision maker across many ordinary situations.") != "Examples / Figures"
+
+
+def test_public_layout_entrypoints_resolve(tmp: Path) -> None:
+    root = default_wiki()
+    doctor = run([sys.executable, str(root / "library.py"), "doctor", "--no-secrets"], cwd=root)
+    assert "PASS required files: present" in doctor.stdout
+    from _meta.scripts import library_phase1_ocr as phase1
+    assert phase1.DEFAULT_GLM_CLI.is_file()
+    glm_path = root / "agents" / "orchestrator" / "skills" / "GLM-OCR" / "scripts" / "glm_ocr_cli.py"
+    spec = importlib.util.spec_from_file_location("candidate_glm_ocr_cli", glm_path)
+    assert spec and spec.loader
+    glm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(glm)
+    assert glm.ENV_FILE == root / ".env"
+
+
+def test_installed_command_works_from_a_nested_directory(tmp: Path) -> None:
+    command = str(Path(sys.executable).with_name("domain-library"))
+    assert Path(command).is_file(), "install the project before running the smoke suite"
+    root = repository_root(Path(__file__))
+    proc = run([command, "doctor", "--no-secrets"], cwd=root / "_meta")
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+
+
+def test_python_support_policy(tmp: Path) -> None:
+    import library
+
+    assert library.supported_python((3, 12))
+    assert library.supported_python((3, 13))
+    assert not library.supported_python((3, 11))
+
+
+def test_production_code_has_no_path_bootstraps(tmp: Path) -> None:
+    root = repository_root(Path(__file__))
+    paths = [root / "library.py", *(root / "domain_library").rglob("*.py"), *(root / "_meta" / "scripts").glob("*.py")]
+    paths += [
+        root / "agents" / "orchestrator" / "skills" / "GLM-OCR" / "scripts" / "glm_ocr_cli.py",
+        root / "agents" / "orchestrator" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py",
+    ]
+    for path in paths:
+        if path.name == "library_pipeline_test_suite.py":
+            continue
+        text = path.read_text(encoding="utf-8")
+        assert "sys.path.insert" not in text, path
+        assert ".parents[" not in text, path
+
+
+def test_docs_drift_checker_tracks_live_tree(tmp: Path) -> None:
+    root = default_wiki()
+    proc = run(["bash", str(root / "_meta" / "scripts" / "docs_drift_check.sh"), str(root)], cwd=root)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "catalogued test rows:" in proc.stdout
+
+
 def test_phase31_rejects_wrong_slug_blocks(tmp: Path) -> None:
     wiki = tmp / "wiki"
     slug = "book-source-wrong"
@@ -912,12 +984,11 @@ def test_phase33_prepare_rejects_missing_native_agent(tmp: Path) -> None:
     slug = "book-dispatch-missing-agent"
     prepare_phase33_fixture(wiki, slug)
     agent_dir = wiki.parent / "lane-agents"
-    agent_dir.mkdir()
-    profile_root = SCRIPT_DIR.parents[1] / "agents" / "library-workers"
-    for profile in profile_root.rglob("*.md"):
-        target = agent_dir / profile.relative_to(profile_root)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(profile.read_text(encoding="utf-8"), encoding="utf-8")
+    workers = default_wiki() / "agents" / "library-workers"
+    for profile in workers.rglob("*.md"):
+        dest = agent_dir / profile.relative_to(workers)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(profile.read_text(encoding="utf-8"), encoding="utf-8")
     os.environ["AGENT_PROFILE_DIR"] = str(agent_dir)
     (agent_dir / "domain-math" / "math.md").unlink()
     proc = run([sys.executable, str(SCRIPT_DIR / "library_phase33_dispatch.py"), "--slug", slug, "--wiki", str(wiki), "--prepare"])
@@ -1583,7 +1654,7 @@ def write_runner_state(wiki: Path, slug: str, *, status: str = "READY_FOR_2.3", 
 
 
 def run_pipeline_next(wiki: Path, slug: str) -> subprocess.CompletedProcess:
-    script = SCRIPT_DIR.parents[1] / "agents" / "orchestrator" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py"
+    script = default_wiki() / "agents" / "orchestrator" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py"
     return run([sys.executable, str(script), "--wiki", str(wiki), "--slug", slug])
 
 
@@ -1593,7 +1664,7 @@ def test_pipeline_next_accepts_real_gate_paths(tmp: Path) -> None:
     proc = run_pipeline_next(wiki, "book-next")
     assert proc.returncode == 0, proc.stderr + proc.stdout
     assert proc.stdout.count("NEXT:") == 1
-    assert "library_phase23_blocks.py" in proc.stdout
+    assert "domain-library run library_phase23_blocks" in proc.stdout
 
 
 def test_pipeline_next_detects_missing_gate(tmp: Path) -> None:
@@ -1622,7 +1693,7 @@ def test_pipeline_next_rejects_unknown_state(tmp: Path) -> None:
 
 
 def test_slug_traversal_rejected_before_filesystem_write(tmp: Path) -> None:
-    import pipeline_common
+    from domain_library.pipeline import common as pipeline_common
     outside = tmp / "escape"
     try:
         pipeline_common.extraction_root(tmp / "wiki", "../../escape")
@@ -1634,7 +1705,7 @@ def test_slug_traversal_rejected_before_filesystem_write(tmp: Path) -> None:
 
 
 def test_source_hash_collision_rejected(tmp: Path) -> None:
-    import library_phase1_ocr as phase1
+    from _meta.scripts import library_phase1_ocr as phase1
     raw = tmp / "raw"
     raw.mkdir()
     (raw / "source-manifest.json").write_text(json.dumps({"sha256": "a" * 64}), encoding="utf-8")
@@ -1647,7 +1718,7 @@ def test_source_hash_collision_rejected(tmp: Path) -> None:
 
 
 def test_phase1_chunk_and_resume_behavior(tmp: Path) -> None:
-    import library_phase1_ocr as phase1
+    from _meta.scripts import library_phase1_ocr as phase1
     from pypdf import PdfReader, PdfWriter
     source = tmp / "source.pdf"
     writer = PdfWriter()
@@ -1670,7 +1741,7 @@ def test_phase1_chunk_and_resume_behavior(tmp: Path) -> None:
 
 
 def test_atomic_json_write_leaves_no_partial_file(tmp: Path) -> None:
-    import pipeline_common
+    from domain_library.pipeline import common as pipeline_common
     target = tmp / "state.json"
     pipeline_common.write_json(target, {"status": "PASS"})
     assert json.loads(target.read_text(encoding="utf-8"))["status"] == "PASS"
@@ -1678,7 +1749,7 @@ def test_atomic_json_write_leaves_no_partial_file(tmp: Path) -> None:
 
 
 def test_ocr_download_retries_and_bounds_bytes(tmp: Path) -> None:
-    import library_phase1_ocr as phase1
+    from _meta.scripts import library_phase1_ocr as phase1
 
     class Response:
         def __init__(self, status: int, chunks: list[bytes]):
@@ -1709,9 +1780,9 @@ def test_ocr_download_retries_and_bounds_bytes(tmp: Path) -> None:
 
 
 def test_alternate_three_lane_domain_configuration(tmp: Path) -> None:
-    import library_phase33_dispatch as phase33
+    from _meta.scripts import library_phase33_dispatch as phase33
     wiki = tmp / "wiki"
-    config = json.loads((SCRIPT_DIR.parents[1] / "_meta" / "config" / "domain.json").read_text(encoding="utf-8"))
+    config = json.loads((default_wiki() / "_meta" / "config" / "domain.json").read_text(encoding="utf-8"))
     config["lanes"] = config["lanes"][:3]
     path = wiki / "_meta" / "config" / "domain.json"
     path.parent.mkdir(parents=True)
@@ -1719,11 +1790,11 @@ def test_alternate_three_lane_domain_configuration(tmp: Path) -> None:
     phase33._load_lanes(wiki)
     assert set(phase33.LANES) == {"defs", "math", "examples"}
     assert len(phase33.validate_agent_profiles()) == 3
-    phase33._load_lanes(SCRIPT_DIR.parents[1])
+    phase33._load_lanes(default_wiki())
 
 
 def test_finalization_requires_audit_and_reaches_done(tmp: Path) -> None:
-    import library_audit
+    from _meta.scripts import library_audit
     wiki = tmp / "wiki"
     slug = "book-final"
     root = wiki / "_meta" / "extractions" / slug

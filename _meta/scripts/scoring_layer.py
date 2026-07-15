@@ -9,12 +9,12 @@ Merges and deduplicates extraction JSONs, then scores concepts by:
 - Confidence scores from sub-agents
 
 Usage:
-    python3 _meta/scripts/scoring_layer.py merge \
+    domain-library run scoring_layer merge \
         --dir _meta/extractions/<slug>/ \
         --slug <slug> \
         --output _meta/extractions/<slug>/master-scored.json
 
-    python3 _meta/scripts/scoring_layer.py threshold \
+    domain-library run scoring_layer threshold \
         --input _meta/extractions/<slug>/master-scored.json \
         --min-score 9 \
         --output _meta/extractions/<slug>/master-top56.json
@@ -24,7 +24,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from pipeline_common import write_json
+from domain_library.pipeline.common import write_json
 from typing import List, Dict, Any
 from collections import defaultdict
 

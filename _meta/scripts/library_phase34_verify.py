@@ -13,21 +13,18 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-SCHEMA_DIR = SCRIPT_DIR.parent / "schemas"
-sys.path.insert(0, str(SCRIPT_DIR))
-sys.path.insert(0, str(SCHEMA_DIR))
+from _meta.scripts import pipeline_run_manifest
+from _meta.scripts import library_phase31_source_index as phase31
+from _meta.scripts import library_phase33_dispatch as phase33
+from _meta.scripts import wiki_integrity
+from _meta.scripts.schemas.extraction_schema import validate_extraction_file
+from _meta.scripts.extraction_units import ExtractionUnit, discover_units
 
-import pipeline_run_manifest
-import library_phase31_source_index as phase31
-import library_phase33_dispatch as phase33
-import wiki_integrity
-from extraction_schema import validate_extraction_file
-from extraction_units import ExtractionUnit, discover_units
-
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 RUNNER = "library_phase34_verify.py"
 BLOCK_ID_RE = re.compile(r"\^([a-z0-9-]+-ch\d+-\d+)")
 BRACKETED_BLOCK_ID_RE = re.compile(r"\^\[[a-z0-9-]+-ch\d+-\d+\]")
@@ -42,7 +39,7 @@ RELATED_TO_RE = re.compile(r"^-\s+related_to::", re.MULTILINE)
 LANE_SECTIONS: dict[str, list[str]] = {}
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     SLOP_RE,
     extraction_root,
     gate_path,
@@ -58,7 +55,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 
 def _load_lane_sections(wiki: Path) -> None:
@@ -420,9 +417,8 @@ def run_verification(wiki: Path, slug: str) -> tuple[dict[str, Any], dict[str, A
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 3.4 specialist output and schema verification gate")
+    ap = pipeline_parser("Run Domain Library Phase 3.4 specialist output and schema verification gate", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     return ap.parse_args()
 
 

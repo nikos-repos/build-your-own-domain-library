@@ -20,7 +20,7 @@ Write the assigned `domain-examples.md` containing exactly these level-2 section
 - `## Figures and Diagrams`
 - `## Implementation Details`
 
-Also write the assigned schema JSON draft path as a real JSON object shaped for `_meta/schemas/extraction_schema.py`: `source`, `chapter`, `chapter_title`, `extracted_at`, `concepts`, `entities`, `formulas`, and `claims`.
+Also write the assigned schema JSON draft path as a real JSON object shaped for `_meta/scripts/schemas/extraction_schema.py`: `source`, `chapter`, `chapter_title`, `extracted_at`, `concepts`, `entities`, `formulas`, and `claims`.
 
 ## Task
 

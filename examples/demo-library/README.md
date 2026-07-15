@@ -8,6 +8,6 @@ The source is *Alice's Adventures in Wonderland* by Lewis Carroll, first publish
 
 Open [`concepts/purposeful-reading.md`](concepts/purposeful-reading.md) in an Obsidian-compatible Markdown viewer rooted at this directory. Its source embed targets the real block in [`chapters/ch-01-down-rabbit-hole.md`](chapters/ch-01-down-rabbit-hole.md). [`source-embed.svg`](source-embed.svg) records the expected resolved view.
 
-The `activation-functions.md` is a real concept page pulled from my own library. 
+Every embed in this demo resolves against the shipped chapter file — open it in an Obsidian-compatible viewer and click through.
 
-
+For a look at a full-scale page from a real library, see the screenshots [`real-concept-page-1.png`](real-concept-page-1.png) and [`real-concept-page-2.png`](real-concept-page-2.png): a concept page rendered in Obsidian with its source embeds resolved.

@@ -7,11 +7,11 @@ Rejects malformed extractions immediately, preventing bad data from
 poisoning the merge.
 
 Usage:
-    python3 _meta/schemas/extraction_schema.py validate \
+    python3 _meta/scripts/schemas/extraction_schema.py validate \
         --input _meta/extractions/<slug>/ch-01.json \
         --slug example-public-domain-book
 
-    python3 _meta/schemas/extraction_schema.py validate-batch \
+    python3 _meta/scripts/schemas/extraction_schema.py validate-batch \
         --dir _meta/extractions/<slug>/ \
         --slug example-public-domain-book
 """

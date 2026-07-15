@@ -6,7 +6,7 @@ Remove concept slugs that are LaTeX artifacts (operatorname, quad, overline, etc
 from scored extraction JSON. Run after scoring_layer.py threshold.
 
 Usage:
-    python3 _meta/scripts/latex_slug_filter.py \
+    domain-library run latex_slug_filter \
         --input _meta/extractions/<slug>/master-top56.json \
         --output _meta/extractions/<slug>/master-top56-clean.json
 """
@@ -16,7 +16,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from pipeline_common import write_json
+from domain_library.pipeline.common import write_json
 
 
 def is_clean_slug(slug: str) -> bool:

@@ -19,6 +19,8 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 from urllib.parse import unquote, urlparse
 
@@ -44,11 +46,11 @@ def load_runtime_dependencies(wiki: Path) -> None:
     PdfWriter = PdfWriter_mod
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_WIKI = Path(os.environ.get("WIKI_PATH", SCRIPT_DIR.parents[1]))
+DEFAULT_WIKI = Path(os.environ.get("WIKI_PATH", default_wiki()))
 DEFAULT_GLM_CLI = Path(
     os.environ.get(
         "GLM_OCR_CLI",
-        str(SCRIPT_DIR.parents[1] / "agents" / "orchestrator" / "skills" / "GLM-OCR" / "scripts" / "glm_ocr_cli.py"),
+        str(default_wiki() / "agents" / "orchestrator" / "skills" / "GLM-OCR" / "scripts" / "glm_ocr_cli.py"),
     )
 )
 DEFAULT_MAX_BYTES = 45 * 1024 * 1024
@@ -60,7 +62,7 @@ IMAGE_URL_RE = re.compile(r"https?://[^\s\"'<>)]*", re.IGNORECASE)
 IMAGE_LABELS = {"image", "chart", "seal", "figure"}
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     extraction_root,
     gate_path,
     rel,
@@ -71,7 +73,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 RUNNER = "library_phase1_ocr.py"
 
@@ -296,7 +298,7 @@ def enforce_source_identity(raw_root: Path, slug: str, source_hash: str) -> Path
     if manifest.exists():
         existing = load_json(manifest)
         if existing.get("sha256") != source_hash:
-            raise RuntimeError(f"slug {slug!r} belongs to a different PDF; run `python library.py restart --slug {slug} --yes` first")
+            raise RuntimeError(f"slug {slug!r} belongs to a different PDF; run `domain-library restart --slug {slug} --yes` first")
     elif raw_root.exists() and any(raw_root.iterdir()):
         raise RuntimeError(f"slug {slug!r} has pre-manifest artifacts; restart it explicitly before ingesting")
     return manifest
@@ -383,10 +385,9 @@ def run_fidelity_reconstructor(
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 1 + 1.5 through API GLM-OCR hard gates")
+    ap = pipeline_parser("Run Domain Library Phase 1 + 1.5 through API GLM-OCR hard gates", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
     ap.add_argument("--pdf", required=True, help="Source PDF path")
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     ap.add_argument("--glm-cli", default=str(DEFAULT_GLM_CLI))
     ap.add_argument("--title", default="")
     ap.add_argument("--author", default="")
@@ -573,7 +574,7 @@ def main() -> None:
     )
     gates["1"] = rel(phase1_gate, wiki)
 
-    from resolve_ocr_output import resolve
+    from _meta.scripts.resolve_ocr_output import resolve
 
     resolved = resolve(slug, wiki)
     if resolved["images_dir_required"] and (not resolved["images_dir"] or not any(Path(resolved["images_dir"]).iterdir())):

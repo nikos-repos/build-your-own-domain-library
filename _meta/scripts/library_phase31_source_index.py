@@ -9,14 +9,15 @@ import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-from extraction_units import ExtractionUnit, discover_units
+from _meta.scripts.extraction_units import ExtractionUnit, discover_units
 
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 CATEGORIES = [
     "Definitions",
     "Formulas",
@@ -93,7 +94,7 @@ CODE_DATA_PATTERNS = [
 SOURCE_JSON_RE = re.compile(r"<!--\s*source_index_json\s*\n(?P<json>.*?)\n\s*-->", re.DOTALL)
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     extraction_root,
     gate_path,
     load_state,
@@ -105,7 +106,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 RUNNER = "library_phase31_source_index.py"
 
@@ -145,18 +146,18 @@ def classify(text: str) -> str:
         return "Examples / Figures"
     if re.search(r"^[A-Z][A-Za-z\s\-/]+:\s", stripped) and word_count >= 5:
         return "Definitions"
-    if word_count >= 8 and any(keyword.lower() in t for keyword in DEFINITION_KEYWORDS):
+    if word_count >= 8 and any(has_keyword(t, keyword) for keyword in DEFINITION_KEYWORDS):
         return "Definitions"
     if word_count >= 5 and re.search(r"\b(is defined as|is known as|also called|refers to)\b", t):
         return "Definitions"
-    if word_count >= 5 and any(keyword.lower() in t for keyword in WARNING_KEYWORDS):
+    if word_count >= 5 and any(has_keyword(t, keyword) for keyword in WARNING_KEYWORDS):
         return "Warnings / Caveats"
-    if any(keyword.lower() in t for keyword in HISTORICAL_KEYWORDS):
+    if any(has_keyword(t, keyword) for keyword in HISTORICAL_KEYWORDS):
         return "Historical / Empirical References"
     if re.search(r"\b(Figure|Table|Algorithm|Listing|Example)\s+[\d\-]+", text):
         return "Examples / Figures"
     if word_count >= 8:
-        if any(keyword.lower() in t for keyword in EXAMPLE_KEYWORDS):
+        if any(has_keyword(t, keyword) for keyword in EXAMPLE_KEYWORDS):
             return "Examples / Figures"
         if re.search(r"\d+\.\d+", text) or re.search(r"\d+%", text) or re.search(r"\$\d+", text):
             return "Examples / Figures"
@@ -176,6 +177,13 @@ def classify(text: str) -> str:
         if re.search(r"\b(data|dataset|sample|observation|empirical|measurement|performance|result|finding)\b", t):
             return "Historical / Empirical References"
     return "Transitional / Structural"
+
+
+def has_keyword(text: str, keyword: str) -> bool:
+    phrase = keyword.strip().lower()
+    if re.fullmatch(r"[a-z0-9]+(?: [a-z0-9]+)*", phrase):
+        return re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text) is not None
+    return keyword.lower() in text
 
 
 def title_for_unit(path: Path, fallback: str) -> str:
@@ -310,9 +318,8 @@ def source_index_path(wiki: Path, slug: str, unit: ExtractionUnit) -> Path:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 3.1 deterministic source-index gate")
+    ap = pipeline_parser("Run Domain Library Phase 3.1 deterministic source-index gate", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     return ap.parse_args()
 
 

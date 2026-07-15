@@ -19,12 +19,13 @@ import json
 import os
 import re
 from pathlib import Path
+from domain_library.paths import default_wiki
 from typing import Any
 from urllib.parse import unquote, urlparse
 
 DEPRECATED_NAMES = {"book_content_list.json", "middle.json", "layout.json"}
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_WIKI = Path(os.environ.get("WIKI_PATH", SCRIPT_DIR.parents[1]))
+DEFAULT_WIKI = Path(os.environ.get("WIKI_PATH", default_wiki()))
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 IMAGE_URL_RE = re.compile(r"https?://[^\s\"'<>)]*", re.IGNORECASE)
 

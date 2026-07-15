@@ -7,7 +7,7 @@ as-is. Run after anything that adds/removes concept pages; audit check
 WI-49 enforces full coverage.
 
 Usage:
-    python3 _meta/scripts/rebuild_index.py [--wiki PATH] [--dry-run]
+    domain-library run rebuild_index [--wiki PATH] [--dry-run]
 """
 from __future__ import annotations
 
@@ -16,11 +16,11 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 SECTION_RE = re.compile(r"^## ", re.MULTILINE)
 
@@ -51,7 +51,7 @@ def rebuild(wiki: Path) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Regenerate index.md from concepts/")
-    ap.add_argument("--wiki", default=str(SCRIPT_DIR.parents[1]))
+    ap.add_argument("--wiki", default=str(default_wiki()))
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     wiki = Path(args.wiki).resolve()

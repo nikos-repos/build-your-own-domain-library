@@ -19,8 +19,8 @@ Non-embed links get a human-readable alias `|^chNN-NNNN` (Obsidian shows the
 alias instead of the long path). Embeds render content, so no alias.
 
 Usage:
-    python3 _meta/scripts/repair_embeds.py --wiki . --pages 'concepts/*.md'            # dry run
-    python3 _meta/scripts/repair_embeds.py --wiki . --pages 'concepts/*.md' --apply
+    domain-library run repair_embeds --wiki . --pages 'concepts/*.md'            # dry run
+    domain-library run repair_embeds --wiki . --pages 'concepts/*.md' --apply
 """
 from __future__ import annotations
 
@@ -29,7 +29,8 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
-from pipeline_common import write_json
+from domain_library.paths import default_wiki
+from domain_library.pipeline.common import write_json
 
 BRACKET_RE = re.compile(r"(!?)\[\[([^\]\[#|]+)#\^\[([A-Za-z0-9-]+)\](\]\]\]|\]\])")
 ANCHORLESS_RE = re.compile(r"(!?)\[\[([a-z0-9-]+-ch\d+-\d+)\]\]")
@@ -91,7 +92,7 @@ def repair_text(text: str, refs: dict[str, str], stats: Counter, unresolved: Cou
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Normalize block embeds/links to canonical chapter-path form")
-    ap.add_argument("--wiki", default=str(Path(__file__).resolve().parents[2]))
+    ap.add_argument("--wiki", default=str(default_wiki()))
     ap.add_argument("--pages", nargs="*", default=["concepts/*.md"])
     ap.add_argument("--apply", action="store_true", help="Write changes (default: dry run)")
     ap.add_argument("--json-out", help="Write repair stats JSON here")

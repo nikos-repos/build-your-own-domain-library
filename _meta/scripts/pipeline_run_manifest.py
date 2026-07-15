@@ -12,19 +12,15 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
-try:
-    from extraction_units import discover_units
-    from pipeline_common import configured_lanes, load_domain_config, write_json
-except ImportError:  # pragma: no cover
-    import sys
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from extraction_units import discover_units
-    from pipeline_common import configured_lanes, load_domain_config, write_json
+from _meta.scripts.extraction_units import discover_units
+from domain_library.pipeline.common import configured_lanes, load_domain_config, write_json
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 
 # Lane identity comes from _meta/config/domain.json.
 LANES = configured_lanes(DEFAULT_WIKI)
@@ -213,9 +209,8 @@ def build_manifest(slug: str, wiki: Path, chapters_dir: Path, create_report: Pat
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Generate Domain Library pipeline-run-manifest.json")
+    ap = pipeline_parser("Generate Domain Library pipeline-run-manifest.json", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     ap.add_argument("--chapters-dir", required=True)
     ap.add_argument("--specialist-dispatch-report")
     ap.add_argument("--specialist-verification")

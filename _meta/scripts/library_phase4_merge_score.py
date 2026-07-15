@@ -12,16 +12,17 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import blockid_validator
+from _meta.scripts import blockid_validator
 import latex_slug_filter
-import scoring_layer
+from _meta.scripts import scoring_layer
 
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 RUNNER = "library_phase4_merge_score.py"
 
 # Lane order comes from _meta/config/domain.json lane order; populated below after imports.
@@ -43,7 +44,7 @@ EXTRACTION_SKIP_NAMES = {
 }
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     confirmation_path,
     confirmed_path,
     extraction_root,
@@ -58,7 +59,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 
 def _load_lane_order(wiki: Path) -> None:
@@ -787,9 +788,8 @@ def confirm(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 4 merge/score/filter/block-ID/user-confirmation gate")
+    ap = pipeline_parser("Run Domain Library Phase 4 merge/score/filter/block-ID/user-confirmation gate", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--prepare", action="store_true", help="Merge, score, filter, validate, and await user confirmation")
     mode.add_argument("--confirm", action="store_true", help="Record user-selected concept slugs and write PASS gate")

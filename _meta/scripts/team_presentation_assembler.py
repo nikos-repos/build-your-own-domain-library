@@ -6,12 +6,12 @@ import argparse
 import re
 import sys
 from pathlib import Path
+from domain_library.paths import default_wiki
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from pipeline_common import configured_lanes
+from domain_library.pipeline.common import configured_lanes
 
 # Lane files and assembly order come from _meta/config/domain.json lane order and required_sections.
-_LANES = configured_lanes(Path(__file__).resolve().parents[2])
+_LANES = configured_lanes(default_wiki())
 LANE_FILES = {lane_id: spec["output"] for lane_id, spec in _LANES.items()}
 ASSEMBLY_ORDER = [
     (section, [lane_id])

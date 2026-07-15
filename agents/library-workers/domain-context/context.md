@@ -20,7 +20,7 @@ Write the assigned `domain-empirical-context.md` containing exactly these level-
 - `## Calibration Data Sources`
 - `## Relations`
 
-Also write the assigned schema JSON draft path as a real JSON object shaped for `_meta/schemas/extraction_schema.py`: `source`, `chapter`, `chapter_title`, `extracted_at`, `concepts`, `entities`, `formulas`, and `claims`.
+Also write the assigned schema JSON draft path as a real JSON object shaped for `_meta/scripts/schemas/extraction_schema.py`: `source`, `chapter`, `chapter_title`, `extracted_at`, `concepts`, `entities`, `formulas`, and `claims`.
 
 ## Task
 

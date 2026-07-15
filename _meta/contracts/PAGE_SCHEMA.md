@@ -32,13 +32,16 @@ A Library page follows this structure:
 
 ## Frontmatter (YAML scalars).
 
+Required keys appear in this order:
+
 ```yaml
 ---
 title: page-slug
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 confidence: 0.0–1.0
-contested: true
+last_reinforced: YYYY-MM-DD
+tier: working
 quality: 0.0–1.0
 quality_notes: "single source; low cross-ref"
 scope: private | shared
@@ -107,11 +110,10 @@ Predicates are **underscored**, lowercase, and preferred to be multi-word.
 
 ## Confidence Score Policy.
 
-- New claim from single source → `confidence: 0.5`.
-- Each additional confirming source → `+0.125`, caps @ 0.95.
-- Explicit contradiction new source → halve confidence, set `contested: true` and add `- contradicts::[[<other-page>]]`.
-- Time-based decay/reinforcement: **THIS FEATURE IS ON THE WAY**  *[Will be introduced here
-  when a maintenance job is built.]*
+- Missing source confidence defaults to `0.5`.
+- Phase 5 preserves the merged extraction confidence and caps it at `0.95`.
+- `last_reinforced` is set at page creation. Cross-ingest reinforcement,
+  contradiction updates, and time-based decay are not implemented.
 
 `quality:` is computed at build time from section completeness, author-quote count, evidence-block count. Page creation is gated for real signals. `quality_notes` records the inputs.
 

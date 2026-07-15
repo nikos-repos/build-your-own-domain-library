@@ -14,8 +14,8 @@ or a book markdown present.
 Dry run by default; pass --apply to delete. Logs to log.md on apply.
 
 Usage:
-    python3 _meta/scripts/prune_raw.py --slug <slug> [--apply]
-    python3 _meta/scripts/prune_raw.py --all [--apply]
+    domain-library run prune_raw --slug <slug> [--apply]
+    domain-library run prune_raw --all [--apply]
 """
 from __future__ import annotations
 
@@ -24,11 +24,11 @@ import json
 import shutil
 import sys
 from pathlib import Path
+from domain_library.paths import default_wiki
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 PRUNE_DIRS = ["glmocr_output/pdf_chunks", "split-pdfs", "split-pdfs-pypdf"]
 
@@ -89,7 +89,7 @@ def prune_slug(wiki: Path, slug: str, apply: bool) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Prune recreatable PDF chunk/split bulk (gated)")
-    ap.add_argument("--wiki", default=str(SCRIPT_DIR.parents[1]))
+    ap.add_argument("--wiki", default=str(default_wiki()))
     target = ap.add_mutually_exclusive_group(required=True)
     target.add_argument("--slug")
     target.add_argument("--all", action="store_true")

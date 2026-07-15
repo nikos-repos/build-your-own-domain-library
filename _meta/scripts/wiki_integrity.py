@@ -29,7 +29,8 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from pipeline_common import write_json
+from domain_library.paths import default_wiki
+from domain_library.pipeline.common import write_json
 
 # Well-formed block embed/link, optional |alias.
 BLOCK_LINK_RE = re.compile(r"(!?)\[\[([^\]\[#|]+)#\^([A-Za-z0-9-]+)(?:\|([^\]]*))?\]\]")
@@ -208,7 +209,7 @@ def check_files(index: VaultIndex, files: list[Path]) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Check block embed/link integrity across the wiki")
-    ap.add_argument("--wiki", default=str(Path(__file__).resolve().parents[2]))
+    ap.add_argument("--wiki", default=str(default_wiki()))
     ap.add_argument("--pages", nargs="*", default=["concepts/*.md"], help="Globs relative to wiki root")
     ap.add_argument("--json-out", help="Write full JSON report here")
     ap.add_argument("--fail-on-dead", action="store_true", help="Exit 2 if any dead link is found")

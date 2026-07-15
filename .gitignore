@@ -5,6 +5,7 @@
 
 # Python
 __pycache__/
+*.egg-info/
 *.py[cod]
 *.pyo
 .pytest_cache/
@@ -54,3 +55,6 @@ comparisons/*
 # Old migration snapshots
 *.orig-*
 *.bak
+
+# Maintainer docs are local-only until ready to ship.
+docs/maintainers/

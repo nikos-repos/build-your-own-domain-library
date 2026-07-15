@@ -11,7 +11,7 @@ Exit codes:
     1 = one or more checks failed (see JSON report)
 
 Usage:
-    python3 _meta/scripts/library_audit.py \
+    domain-library run library_audit \
         --slug example-book-slug \
         --wiki /path/to/build-your-own-domain-library \
         --report _meta/reports/audit-<slug>-YYYYMMDD.json
@@ -27,12 +27,11 @@ from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import scoring_layer
-import source_grounding_quality
-import wiki_integrity
-from pipeline_common import load_state, rel, validate_slug, write_gate, write_json, write_state
+from _meta.scripts import scoring_layer
+from _meta.scripts import source_grounding_quality
+from _meta.scripts import wiki_integrity
+from domain_library.pipeline.common import load_state, rel, validate_slug, write_gate, write_json, write_state
 
 
 class AuditCheck:

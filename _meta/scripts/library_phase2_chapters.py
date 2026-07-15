@@ -13,18 +13,19 @@ import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-from chapter_splitter import split_chapters
-from extraction_units import discover_units
+from _meta.scripts.chapter_splitter import split_chapters
+from _meta.scripts.extraction_units import discover_units
 
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     extraction_root,
     gate_path,
     load_state,
@@ -36,7 +37,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 RUNNER = "library_phase2_chapters.py"
 
@@ -120,9 +121,8 @@ def parse_expected_units(boundaries_path: Path | None) -> int | None:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 2.1 + 2.2 hard gates")
+    ap = pipeline_parser("Run Domain Library Phase 2.1 + 2.2 hard gates", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     ap.add_argument("--boundaries", help="Canonical chapter-boundaries.json; defaults to raw/papers/<slug>/chapter-boundaries.json when present")
     ap.add_argument("--force", action="store_true", help="Replace a non-empty chapters directory")
     return ap.parse_args()

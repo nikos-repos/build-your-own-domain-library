@@ -13,7 +13,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from pipeline_common import write_json
+from domain_library.pipeline.common import write_json
 from typing import Any
 
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")

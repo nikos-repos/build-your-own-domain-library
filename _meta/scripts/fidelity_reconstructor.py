@@ -17,7 +17,7 @@ GLM-OCR JSON schema (per page):
   ]
 
 Usage:
-    python3 _meta/scripts/fidelity_reconstructor.py \\
+    domain-library run fidelity_reconstructor \\
         --slug example-book \\
         --input output/example-book/example-book.json \\
         --output raw/papers/example-book/book_fidelity.md \\
@@ -39,10 +39,9 @@ import os
 import re
 import sys
 from pathlib import Path
-from pipeline_common import write_json
+from domain_library.pipeline.common import write_json
 
 # Import table converter (works with GLM-OCR HTML tables too)
-sys.path.insert(0, str(Path(__file__).parent))
 from html_table_converter import convert_html_table
 
 

@@ -1,0 +1,14 @@
+# Resolved runtime environment for supported Python 3.12+ installs.
+# Regenerate deliberately when updating a direct dependency in pyproject.toml.
+PyYAML==6.0.2
+annotated-types==0.7.0
+certifi==2026.6.17
+charset-normalizer==3.4.9
+idna==3.18
+pydantic==2.12.5
+pydantic_core==2.41.5
+pypdf==5.9.0
+requests==2.32.4
+typing-inspection==0.4.2
+typing_extensions==4.16.0
+urllib3==2.7.0

@@ -14,8 +14,9 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
+from domain_library.paths import default_wiki
 from typing import Any
-from pipeline_common import write_json
+from domain_library.pipeline.common import write_json
 
 # Generic English + wiki-structural stopwords only. Book-specific noise
 # tokens (title words, author names) belong in --extra-stopwords, not here.
@@ -227,7 +228,7 @@ def write_image_md(report: dict[str, Any], out: Path) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description="Run lexical overlap and image coverage checks")
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(Path(__file__).resolve().parents[2]))
+    ap.add_argument("--wiki", default=str(default_wiki()))
     ap.add_argument("--chapters-dir", required=True)
     ap.add_argument("--image-report")
     ap.add_argument("--out-dir")

@@ -15,23 +15,24 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import blockid_validator
+from _meta.scripts import blockid_validator
 import latex_slug_filter
-import team_presentation_assembler as presentation_assembler
-import wiki_integrity
-import yaml_serializer
+from _meta.scripts import team_presentation_assembler as presentation_assembler
+from _meta.scripts import wiki_integrity
+from _meta.scripts import yaml_serializer
 
 try:
     import yaml
 except ImportError:  # pragma: no cover - yaml_serializer already enforces this at import time.
     yaml = None
 
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 RUNNER = "library_phase5_pages.py"
 CITED_BLOCK_RE = re.compile(r"\^([a-z0-9-]+-ch\d+-\d+)")
 EMBED_RE = re.compile(r"!\[\[[^\]]+#\^([a-z0-9-]+-ch\d+-\d+)[^\]]*\]\]")
@@ -69,7 +70,7 @@ class Presentation:
     embeds: list[str]
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     SLOP_RE,
     confirmation_path,
     confirmed_path,
@@ -84,7 +85,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 
 def domain_slug() -> str:
@@ -576,9 +577,8 @@ def build_pages(wiki: Path, source_slug: str, force: bool) -> tuple[dict[str, An
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 5 canonical team-presentation page writer")
+    ap = pipeline_parser("Run Domain Library Phase 5 canonical team-presentation page writer", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     ap.add_argument("--force", action="store_true", help="Overwrite existing concept pages intentionally")
     return ap.parse_args()
 

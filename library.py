@@ -11,13 +11,49 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-SCRIPTS = ROOT / "_meta" / "scripts"
-sys.path.insert(0, str(SCRIPTS))
+from domain_library.paths import repository_root
+from domain_library.pipeline.common import load_domain_config, validate_slug
 
-from pipeline_common import load_domain_config, validate_slug
+ROOT = repository_root(Path(__file__))
+SCRIPTS = ROOT / "_meta" / "scripts"
 
 NEXT = ROOT / "agents" / "orchestrator" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py"
+RUNNERS = (
+    "block_annotator",
+    "blockid_validator",
+    "chapter_size_splitter",
+    "chapter_splitter",
+    "extraction_units",
+    "fidelity_reconstructor",
+    "html_table_converter",
+    "image_chapter_mapper",
+    "latex_slug_filter",
+    "library_audit",
+    "library_phase1_ocr",
+    "library_phase23_blocks",
+    "library_phase24_images",
+    "library_phase2_chapters",
+    "library_phase30_vision",
+    "library_phase31_source_index",
+    "library_phase32_size_split",
+    "library_phase33_dispatch",
+    "library_phase34_verify",
+    "library_phase35_presentations",
+    "library_phase4_merge_score",
+    "library_phase5_pages",
+    "library_pipeline_test_suite",
+    "pipeline_run_manifest",
+    "prune_raw",
+    "rebuild_index",
+    "repair_embeds",
+    "resolve_ocr_output",
+    "scoring_layer",
+    "source_grounding_quality",
+    "team_presentation_assembler",
+    "verify_image_refs",
+    "wiki_integrity",
+    "yaml_serializer",
+)
 
 
 def run(*parts: str) -> int:
@@ -36,9 +72,13 @@ def env_value(name: str) -> str:
     return ""
 
 
+def supported_python(version: tuple[int, int] = sys.version_info[:2]) -> bool:
+    return version >= (3, 12)
+
+
 def doctor(args: argparse.Namespace) -> int:
     checks: list[tuple[str, bool, str]] = []
-    checks.append(("Python 3.12+", sys.version_info[:2] >= (3, 12), sys.version.split()[0]))
+    checks.append(("Python >= 3.12", supported_python(), sys.version.split()[0]))
     for module in ("pydantic", "requests", "pypdf", "yaml"):
         try:
             importlib.import_module(module)
@@ -52,7 +92,7 @@ def doctor(args: argparse.Namespace) -> int:
         checks.append(("domain configuration", False, str(exc)))
     override = None
     try:
-        import library_phase33_dispatch as dispatch
+        from _meta.scripts import library_phase33_dispatch as dispatch
         override = os.environ.pop("AGENT_PROFILE_DIR", None)
         dispatch._load_lanes(ROOT)
         profiles = dispatch.validate_agent_profiles()
@@ -87,13 +127,17 @@ def start(args: argparse.Namespace) -> int:
 
 
 def next_command(args: argparse.Namespace) -> int:
-    return run(str(NEXT), "--slug", validate_slug(args.slug))
+    return run("-m", "domain_library.pipeline.next", "--slug", validate_slug(args.slug))
 
 
 def status(args: argparse.Namespace) -> int:
-    command = [str(NEXT), "--json"]
+    command = ["-m", "domain_library.pipeline.next", "--json"]
     command += ["--slug", validate_slug(args.slug)] if args.slug else ["--all"]
     return run(*command)
+
+
+def run_runner(args: argparse.Namespace) -> int:
+    return run("-m", f"_meta.scripts.{args.runner}", *args.arguments)
 
 
 def restart(args: argparse.Namespace) -> int:
@@ -126,6 +170,10 @@ def parser() -> argparse.ArgumentParser:
     p = sub.add_parser("status")
     p.add_argument("--slug")
     p.set_defaults(func=status)
+    p = sub.add_parser("run", help="run a packaged pipeline command")
+    p.add_argument("runner", choices=RUNNERS)
+    p.add_argument("arguments", nargs=argparse.REMAINDER)
+    p.set_defaults(func=run_runner)
     p = sub.add_parser("restart", help="delete one ingest's generated state so a different PDF can reuse its slug")
     p.add_argument("--slug", required=True)
     p.add_argument("--yes", action="store_true")
@@ -133,10 +181,14 @@ def parser() -> argparse.ArgumentParser:
     return ap
 
 
-if __name__ == "__main__":
+def main() -> int:
     args = parser().parse_args()
     try:
-        raise SystemExit(args.func(args))
+        return args.func(args)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
-        raise SystemExit(2)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

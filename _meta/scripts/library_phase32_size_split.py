@@ -16,22 +16,23 @@ import sys
 from collections import Counter, defaultdict, deque
 from datetime import datetime, timezone
 from pathlib import Path
+from domain_library.paths import default_wiki
+from domain_library.pipeline.cli import pipeline_parser
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
 
-import library_phase30_vision as phase30
-import library_phase31_source_index as phase31
-from chapter_size_splitter import line_count, split_chapter
-from extraction_units import ExtractionUnit, discover_units
-from verify_image_refs import verify as verify_image_refs
+from _meta.scripts import library_phase30_vision as phase30
+from _meta.scripts import library_phase31_source_index as phase31
+from _meta.scripts.chapter_size_splitter import line_count, split_chapter
+from _meta.scripts.extraction_units import ExtractionUnit, discover_units
+from _meta.scripts.verify_image_refs import verify as verify_image_refs
 
-DEFAULT_WIKI = SCRIPT_DIR.parents[1]
+DEFAULT_WIKI = default_wiki()
 RUNNER = "library_phase32_size_split.py"
 
 
-from pipeline_common import (  # shared plumbing — audit T10
+from domain_library.pipeline.common import (  # shared plumbing — audit T10
     extraction_root,
     gate_path,
     load_state,
@@ -43,7 +44,7 @@ from pipeline_common import (  # shared plumbing — audit T10
     write_gate,
     write_json,
 )
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 
 def write_state(wiki: Path, slug: str, status: str, current_phase: str, completed: list[str], gates: dict[str, str]) -> None:
@@ -402,9 +403,8 @@ def validate_post_units(chapters_dir: Path, slug: str, max_lines: int) -> tuple[
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run Domain Library Phase 3.2 size-split hard gate")
+    ap = pipeline_parser("Run Domain Library Phase 3.2 size-split hard gate", default=DEFAULT_WIKI)
     ap.add_argument("--slug", required=True)
-    ap.add_argument("--wiki", default=str(DEFAULT_WIKI))
     ap.add_argument("--max-lines", type=int, default=2000)
     ap.add_argument("--split-window", type=int, default=100)
     return ap.parse_args()

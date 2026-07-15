@@ -15,7 +15,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from pipeline_common import write_json
+from domain_library.pipeline.common import write_json
 from typing import Any
 
 

@@ -8,7 +8,7 @@ and reassembles the file. Eliminates quoting errors, colons-in-titles, and other
 YAML gotchas.
 
 Usage:
-    python3 _meta/scripts/yaml_serializer.py \
+    domain-library run yaml_serializer \
         --input concepts/draft-page.md \
         --output concepts/final-page.md \
         --confidence 0.75 \
@@ -20,10 +20,10 @@ import json
 import re
 import sys
 from pathlib import Path
+from domain_library.paths import default_wiki
 from datetime import datetime
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import pipeline_common
+from domain_library.pipeline import common as pipeline_common
 
 try:
     import yaml
@@ -162,7 +162,7 @@ def process_file(input_path: Path, output_path: Path, confidence: float, tier: s
         class_preds = [
             "- conforms_to::[[concept-form-contract]]\n",
             "- has_status::[[growing]]\n",
-            f"- in_domain::[[{pipeline_common.load_domain_config(Path(__file__).resolve().parents[2])['tenant']}]]\n",
+            f"- in_domain::[[{pipeline_common.load_domain_config(default_wiki())['tenant']}]]\n",
         ]
 
     final = reassemble_page(parsed, frontmatter, class_preds)

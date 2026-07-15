@@ -15,8 +15,8 @@ Usage (as library):
     markdown = convert_html_table("<table>...</table>")
 
 Usage (CLI):
-    python3 _meta/scripts/html_table_converter.py --input table.html
-    echo '<table>...' | python3 _meta/scripts/html_table_converter.py --stdin
+    domain-library run html_table_converter --input table.html
+    echo '<table>...' | domain-library run html_table_converter --stdin
 """
 
 import argparse
