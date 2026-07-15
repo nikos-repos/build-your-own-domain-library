@@ -1,5 +1,7 @@
 # Build Your Own Domain Library
 
+[![CI](https://github.com/nikos-repos/build-your-own-domain-library/actions/workflows/ci.yml/badge.svg)](https://github.com/nikos-repos/build-your-own-domain-library/actions/workflows/ci.yml)
+
 An academic book ingestion and extraction pipeline for building a markdown knowledge base from PDFs. Inspired by the LLM Wiki pattern proposed by Andrej Karpathy, but revamped in a way that **actually works.** This gated pipeline turns a raw source document (such as 900+ page books, and academic research articles) into **source-grounded, rich concept pages**.
 
 Concept pages are markdown Library pages where every single claim you can see is backed by a click-through embed of the exact source passage.
