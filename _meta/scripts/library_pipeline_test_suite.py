@@ -497,6 +497,50 @@ def test_phase2_refuses_existing_chapters(tmp: Path) -> None:
     assert proc.returncode == 2
     assert (chapters / "ch-01-old.md").read_text(encoding="utf-8").startswith("old block id")
 
+def test_phase2_recovers_from_detection_failure_and_failed_state(tmp: Path) -> None:
+    wiki = tmp / "wiki"
+    slug = "book-recovery"
+    raw = wiki / "raw" / "papers" / slug
+    raw.mkdir(parents=True)
+    seed_phase15_state(wiki, slug)
+    (raw / "book_fidelity.md").write_text("Intro para.\n\nBody one.\n\nBody two.\n\nEnd.\n", encoding="utf-8")
+    state_file = wiki / "_meta" / "extractions" / slug / "pipeline-state.json"
+    runner = str(SCRIPT_DIR / "library_phase2_chapters.py")
+
+    # Article-shaped source: detection failure is an instructive stop, not a FAIL.
+    proc = run([sys.executable, runner, "--slug", slug, "--wiki", str(wiki)])
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    assert proc.returncode == 2
+    assert state["status"] == "READY_FOR_2.1", state
+    assert "chapter-boundaries.json" in proc.stderr
+
+    # A genuine failure (bad boundaries) records FAILED but keeps prior gate records.
+    (raw / "chapter-boundaries.json").write_text(
+        json.dumps({"expected_units": 3, "chapters": [{"chapter": 1, "title": "Only One", "line_start": 1}]}),
+        encoding="utf-8",
+    )
+    proc = run([sys.executable, runner, "--slug", slug, "--wiki", str(wiki)])
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    assert proc.returncode == 2
+    assert state["status"] == "FAILED"
+    assert "1.5" in state["gates"], state["gates"]
+
+    # Fixing the cause and rerunning the same phase from FAILED must succeed.
+    (raw / "chapter-boundaries.json").write_text(
+        json.dumps({
+            "expected_units": 2,
+            "chapters": [
+                {"chapter": 1, "title": "Part One", "line_start": 1},
+                {"chapter": 2, "title": "Part Two", "line_start": 3},
+            ],
+        }),
+        encoding="utf-8",
+    )
+    proc = run([sys.executable, runner, "--slug", slug, "--wiki", str(wiki)])
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    assert state["status"] == "READY_FOR_2.3"
+
 def test_phase23_runner_writes_gate_and_report(tmp: Path) -> None:
     wiki = tmp / "wiki"
     slug = "book-blocks"
@@ -1415,6 +1459,33 @@ def pass_phase4_fixture(wiki: Path, slug: str, selected: list[str] | None = None
     return raw
 
 
+def test_cli_run_executes_phase4_and_phase5_runners(tmp: Path) -> None:
+    # Regression: `domain-library run` executes runners as `python -m`, where a
+    # bare sibling import crashes even though direct-path invocation works.
+    wiki = tmp / "wiki"
+    slug = "book-cli-run"
+    pass_phase35_fixture(wiki, slug)
+    library = str(repository_root(Path(__file__)) / "library.py")
+    proc = run([
+        sys.executable, library, "run", "library_phase4_merge_score",
+        "--slug", slug, "--wiki", str(wiki), "--prepare", "--min-score", "3",
+    ])
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    root = wiki / "_meta" / "extractions" / slug
+    selection = root / "phase4-user-selection.json"
+    selection.write_text(json.dumps({"confirmed_slugs": ["defs-concept"]}), encoding="utf-8")
+    proc = run([
+        sys.executable, library, "run", "library_phase4_merge_score",
+        "--slug", slug, "--wiki", str(wiki), "--confirm", "--selection", str(selection),
+    ])
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    proc = run([
+        sys.executable, library, "run", "library_phase5_pages",
+        "--slug", slug, "--wiki", str(wiki),
+    ])
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    assert (wiki / "concepts" / "defs-concept.md").exists()
+
 def test_phase5_writes_pages_from_team_presentations(tmp: Path) -> None:
     wiki = tmp / "wiki"
     slug = "book-phase5-pass"
@@ -1660,7 +1731,9 @@ def run_pipeline_next(wiki: Path, slug: str) -> subprocess.CompletedProcess:
 
 def test_pipeline_next_accepts_real_gate_paths(tmp: Path) -> None:
     wiki = tmp / "wiki"
-    write_runner_state(wiki, "book-next")
+    gate = write_runner_state(wiki, "book-next")
+    # Sidecar artifacts in gates/ (e.g. Phase 1.5 stats) are not gates and must not drift.
+    (gate.parent / "phase-1.5-stats.json").write_text('{"fidelity": 1.0}', encoding="utf-8")
     proc = run_pipeline_next(wiki, "book-next")
     assert proc.returncode == 0, proc.stderr + proc.stdout
     assert proc.stdout.count("NEXT:") == 1

@@ -131,7 +131,6 @@ class LibraryAudit:
 
         # === Phase 3: Extraction ===
         self.check_ex06_one_chapter_per_subagent()
-        self.check_ex07_wave_dispatch()
         self.check_ex08_toolsets_all()
         self.check_ex09_role_leaf()
         self.check_ex10_pydantic_validation()
@@ -254,16 +253,25 @@ class LibraryAudit:
     # Phase 3 checks
     # ------------------------------------------------------------------
     def check_ex06_one_chapter_per_subagent(self):
-        check = self.add_check("EX-06", "Every sub-agent processed ≤1 chapter", "Phase 3", manual=True)
-        check.warn("Verify via orchestrator logs / checkpoint files")
-
-    def check_ex07_wave_dispatch(self):
-        check = self.add_check("EX-07", "Sub-agents dispatched in waves matching delegation.max_concurrent_children", "Phase 3", manual=True)
-        check.warn("Verify via orchestrator logs / checkpoint files")
+        check = self.add_check("EX-06", "Every sub-agent processed ≤1 unit", "Phase 3", manual=True)
+        check.warn("Verify via the Phase 3.3 dispatch plan and recorded dispatch-result.json (one task per unit/lane)")
 
     def check_ex08_toolsets_all(self):
-        check = self.add_check("EX-08", "Runtime agent dispatch recorded for specialist lanes", "Phase 3", manual=True)
-        check.warn("Verify _meta/extractions/<slug>/specialist-dispatch-report.json contains agent_mode='named-lane-agents' and runtime_tool='agent'")
+        check = self.add_check("EX-08", "Runtime-neutral prompt-contract dispatch recorded for specialist lanes", "Phase 3")
+        report_path = self.extractions_dir / "specialist-dispatch-report.json"
+        if not report_path.exists():
+            check.fail("specialist-dispatch-report.json not found")
+            return
+        try:
+            report = json.loads(report_path.read_text())
+        except (json.JSONDecodeError, IOError) as exc:
+            check.fail(f"specialist-dispatch-report.json unreadable: {exc}")
+            return
+        mode = report.get("agent_mode")
+        if mode != "runtime-neutral-prompt-contracts":
+            check.fail(f"agent_mode is {mode!r}, expected 'runtime-neutral-prompt-contracts'")
+            return
+        check.ok("Dispatch report records runtime-neutral prompt-contract mode")
 
     def check_ex09_role_leaf(self):
         check = self.add_check("EX-09", "All specialist unit/lane pairs have recorded runtime job ids", "Phase 3", manual=True)
@@ -271,7 +279,7 @@ class LibraryAudit:
 
     def check_ex10_pydantic_validation(self):
         check = self.add_check("EX-10", "Pydantic validation passed on all extraction JSONs", "Phase 3")
-        schema_script = self.wiki / "_meta" / "schemas" / "extraction_schema.py"
+        schema_script = self.wiki / "_meta" / "scripts" / "schemas" / "extraction_schema.py"
         if not schema_script.exists():
             check.fail("extraction_schema.py not found")
             return
@@ -326,7 +334,8 @@ class LibraryAudit:
                 item.get("block_ids") or item.get("block_id")
                 for item in items if isinstance(item, dict)
             )
-            if not has_bid:
+            declared_absent = isinstance(data, dict) and data.get("no_lane_content") is True
+            if not has_bid and not declared_absent:
                 missing.append(j.name)
         if missing:
             check.fail(f"Missing block IDs in: {', '.join(missing[:5])}")
@@ -334,7 +343,9 @@ class LibraryAudit:
             check.ok(f"All {len(jsons)} JSONs contain block_id references")
 
     def check_ex12_concept_density_fields(self):
-        check = self.add_check("EX-12", "All concepts have confidence and concepts_per_100_lines fields", "Phase 3")
+        # Only `confidence` is required: the extraction schema defaults
+        # concepts_per_100_lines and no worker contract asks for it.
+        check = self.add_check("EX-12", "All concepts have a confidence field", "Phase 3")
         if not self.extractions_dir.exists():
             check.fail("Extractions dir not found")
             return
@@ -347,7 +358,7 @@ class LibraryAudit:
                 continue
             concepts = data.get("concepts", []) if isinstance(data, dict) else []
             for c in concepts:
-                if "confidence" not in c or "concepts_per_100_lines" not in c:
+                if "confidence" not in c:
                     missing.append(f"{j.name}:{c.get('slug', '?')}")
                     break
         if missing:
@@ -591,7 +602,7 @@ class LibraryAudit:
 
     def check_pq32_all_warnings(self):
         check = self.add_check("PQ-32", "ALL author warnings included in ## Author's Warnings", "Page Quality", manual=True)
-        check.warn("Verify manually against Agent 5 output")
+        check.warn("Verify manually against the warnings lane output (domain-warnings.md)")
 
     def check_pq33_limitations_included(self):
         check = self.add_check("PQ-33", "Author's limitations and counter-arguments included", "Page Quality", manual=True)

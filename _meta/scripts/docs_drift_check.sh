@@ -43,10 +43,15 @@ for f in $(grep -rhoE '_meta/scripts/[a-z0-9_]+\.py' ./*.md "${DOC_ROOTS[@]}" 2>
   [ -f "$f" ] || note "docs reference $f but it does not exist"
 done
 
-echo "== 5. secret-shaped values in local .env files =="
+echo "== 5. secret-shaped values in .env files Git would ship =="
+# A real key in a gitignored .env is the documented setup, not drift.
 while IFS= read -r envf; do
   if grep -qE 'KEY=[A-Za-z0-9._-]{20,}' "$envf" 2>/dev/null; then
-    note "$envf contains a real-looking API key"
+    if git check-ignore --quiet "$envf" 2>/dev/null; then
+      echo "note: $envf holds a real-looking API key (gitignored — expected for local setup)"
+    else
+      note "$envf contains a real-looking API key and is NOT gitignored"
+    fi
   fi
 done < <(find . -name .env -not -path './.git/*' 2>/dev/null)
 

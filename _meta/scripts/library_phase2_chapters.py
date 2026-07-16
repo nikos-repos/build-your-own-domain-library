@@ -58,8 +58,12 @@ def preflight_phase15(wiki: Path, slug: str) -> tuple[dict[str, Any], dict[str, 
     completed = set(str(x) for x in state.get("completed_phases", []))
     if "1.5" not in completed:
         raise RuntimeError("pipeline-state.json does not mark Phase 1.5 complete")
-    if state.get("status") not in {"READY_FOR_2.1", "READY_FOR_2", "IN_PROGRESS", "READY_FOR_2.2"}:
-        raise RuntimeError(f"pipeline-state status is not ready for Phase 2.1: {state.get('status')}")
+    status = state.get("status")
+    # A FAILED state left by this runner is rerunnable: fixing the cause and
+    # rerunning the same phase is the documented recovery path.
+    failed_here = status == "FAILED" and str(state.get("current_phase")) in {"2.1", "2.2"}
+    if status not in {"READY_FOR_2.1", "READY_FOR_2", "IN_PROGRESS", "READY_FOR_2.2"} and not failed_here:
+        raise RuntimeError(f"pipeline-state status is not ready for Phase 2.1: {status}")
     return state, gate_data
 
 
@@ -201,10 +205,33 @@ def main() -> None:
                 completed.append(phase)
         write_state(wiki, slug, "READY_FOR_2.3", "2.2", completed, gates)
     except Exception as exc:
+        needs_boundaries = isinstance(exc, RuntimeError) and "chapter-boundaries.json" in str(exc)
+        if needs_boundaries and boundaries_path is None:
+            # Sources without detectable chapter headings (articles, essays) are
+            # expected input, not a pipeline failure: state stays READY_FOR_2.1
+            # so writing chapter-boundaries.json and rerunning just works.
+            print(f"ERROR: {exc}", file=sys.stderr)
+            print(
+                f"State unchanged ({load_state(wiki, slug).get('status')}). Create "
+                f"raw/papers/{slug}/chapter-boundaries.json with TOC-derived line_start "
+                "entries, then rerun this phase.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
         phase = "2.1" if "2.1" not in completed else "2.2"
         fail_gate = write_gate(wiki, slug, phase, "FAIL", {"reason": str(exc)})
         gates[phase] = rel(fail_gate, wiki)
-        write_state(wiki, slug, "FAILED", phase, completed, gates)
+        # Merge with the on-disk state so a preflight failure never erases the
+        # gate/completion records earlier phases already wrote.
+        try:
+            prior = load_state(wiki, slug)
+        except Exception:
+            prior = {}
+        merged_gates = {str(k): str(v) for k, v in (prior.get("gates") or {}).items()}
+        merged_gates.update(gates)
+        merged_completed = [str(x) for x in (prior.get("completed_phases") or [])]
+        merged_completed += [p for p in completed if p not in merged_completed]
+        write_state(wiki, slug, "FAILED", phase, merged_completed, merged_gates)
         print(f"ERROR: {exc}", file=sys.stderr)
         raise SystemExit(2)
 

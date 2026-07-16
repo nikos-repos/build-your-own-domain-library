@@ -22,7 +22,7 @@ import re
 import sys
 from pathlib import Path
 from typing import List
-from pydantic import BaseModel, Field, field_validator, ValidationError
+from pydantic import BaseModel, Field, field_validator, model_validator, ValidationError
 
 
 # ---------------------------------------------------------------------------
@@ -89,13 +89,20 @@ class ExtractionOutput(BaseModel):
     entities: List[EntityMention] = Field(default_factory=list)
     formulas: List[Formula] = Field(default_factory=list)
     claims: List[Claim] = Field(default_factory=list)
+    # A lane may honestly find nothing in a unit (e.g. a math lane in a
+    # formula-free chapter). Declaring that is valid output; silently empty
+    # extractions are still rejected.
+    no_lane_content: bool = False
 
-    @field_validator("concepts")
-    @classmethod
-    def must_have_concepts(cls, v: List[Concept]) -> List[Concept]:
-        if len(v) == 0:
-            raise ValueError("Extraction must contain at least one concept")
-        return v
+    @model_validator(mode="after")
+    def concepts_or_declared_absence(self) -> "ExtractionOutput":
+        if not self.concepts and not self.no_lane_content:
+            raise ValueError(
+                "Extraction must contain at least one concept, or set "
+                '"no_lane_content": true when the lane\'s content is genuinely '
+                "absent from this unit"
+            )
+        return self
 
 
 # ---------------------------------------------------------------------------

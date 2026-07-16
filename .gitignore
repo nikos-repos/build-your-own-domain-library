@@ -24,6 +24,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# Obsidian vault workspace state
+.obsidian/
+
 # Local runtime / agent caches
 .omp/
 .a5c/

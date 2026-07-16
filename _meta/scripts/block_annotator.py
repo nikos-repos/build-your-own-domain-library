@@ -5,6 +5,9 @@ Low-level annotator behavior:
 - scans chapter-like `*.md` files;
 - preserves existing correct block IDs;
 - annotates substantive body lines only;
+- anchors each table with one block ID on its own line after the table
+  (the only placement Obsidian resolves for tables);
+- never annotates HTML comments (they embed as blank in Obsidian);
 - keeps counters global per chapter number.
 
 Canonical Phase 2.3 orchestration is handled by `library_phase23_blocks.py`.
@@ -74,8 +77,8 @@ def should_skip_line(stripped: str, in_frontmatter: bool) -> bool:
         return True
     if stripped.startswith("```"):
         return True
-    # Do not annotate table separator rows; table data rows still get IDs.
-    if re.match(r"^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$", stripped):
+    # HTML comments render as nothing in Obsidian; an anchored comment is a dead embed.
+    if stripped.startswith("<!--"):
         return True
     return False
 
@@ -101,6 +104,7 @@ def count_substantive_lines(path: Path) -> int:
 def annotate_file(path: Path, slug: str, ch_num: int, start_counter: int) -> dict[str, Any]:
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
     pat = block_pattern(slug)
+    anchor_line_pat = re.compile(BLOCK_RE_TEMPLATE.format(slug=re.escape(slug)) + r"$")
     out: list[str] = []
     counter = start_counter
     added = 0
@@ -108,26 +112,69 @@ def annotate_file(path: Path, slug: str, ch_num: int, start_counter: int) -> dic
     substantive = 0
     in_frontmatter = False
     frontmatter_done = False
+    in_comment = False
 
-    for line in lines:
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
         stripped = line.strip()
         if stripped == "---" and not frontmatter_done:
             in_frontmatter = not in_frontmatter
             out.append(line)
             if not in_frontmatter:
                 frontmatter_done = True
+            i += 1
+            continue
+        if in_comment:
+            out.append(line)
+            if "-->" in stripped:
+                in_comment = False
+            i += 1
+            continue
+        if stripped.startswith("<!--") and "-->" not in stripped:
+            out.append(line)
+            in_comment = True
+            i += 1
+            continue
+        # A bare anchor line belongs to the block above it (e.g. a table); copy silently.
+        if anchor_line_pat.match(stripped):
+            out.append(line)
+            i += 1
+            continue
+        if not in_frontmatter and stripped.startswith("|"):
+            # Obsidian resolves a table's block ID only when it sits on its own
+            # line after the table, so the whole table is one addressable block.
+            table_lines: list[str] = []
+            while i < n and lines[i].strip().startswith("|"):
+                table_lines.append(lines[i])
+                i += 1
+            if not table_lines[-1].endswith("\n"):
+                table_lines[-1] += "\n"
+            out.extend(table_lines)
+            substantive += 1
+            next_stripped = lines[i].strip() if i < n else ""
+            if any(pat.search(t) for t in table_lines) or anchor_line_pat.match(next_stripped):
+                preserved += 1
+            else:
+                counter += 1
+                out.append(f"^{slug}-ch{ch_num:02d}-{counter:04d}\n")
+                added += 1
             continue
         if should_skip_line(stripped, in_frontmatter):
             out.append(line)
+            i += 1
             continue
         substantive += 1
         if pat.search(line):
             preserved += 1
             out.append(line)
+            i += 1
             continue
         counter += 1
         out.append(line.rstrip("\n") + f" ^{slug}-ch{ch_num:02d}-{counter:04d}\n")
         added += 1
+        i += 1
 
     if added:
         path.write_text("".join(out), encoding="utf-8")

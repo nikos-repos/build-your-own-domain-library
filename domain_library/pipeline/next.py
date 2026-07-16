@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -103,9 +104,13 @@ def inspect(wiki: Path, slug: str) -> dict:
     on_disk = {}
     if gates_dir.is_dir():
         for gf in sorted(gates_dir.glob("phase-*.json")):
+            phase = gf.stem.replace("phase-", "")
+            # Only canonical gate files count; runners may park sidecar artifacts
+            # (e.g. phase-1.5-stats.json) in gates/ and those are not gates.
+            if not re.fullmatch(r"\d+(\.\d+)?|post", phase):
+                continue
             try:
                 g = json.loads(gf.read_text(encoding="utf-8"))
-                phase = gf.stem.replace("phase-", "")
                 on_disk[phase] = {"path": gf, "phase": g.get("phase"), "status": g.get("status", "?")}
             except Exception:
                 out["drift"].append(f"unreadable gate file: {gf.name}")

@@ -19,7 +19,7 @@ from typing import Any
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 from _meta.scripts import blockid_validator
-import latex_slug_filter
+from _meta.scripts import latex_slug_filter
 from _meta.scripts import scoring_layer
 
 DEFAULT_WIKI = default_wiki()
@@ -430,7 +430,7 @@ def render_candidates_markdown(slug: str, clean_concepts: dict[str, dict[str, An
         "Then run:",
         "",
         "```bash",
-        f"python3 _meta/scripts/{RUNNER} --slug {slug} --confirm --selection _meta/extractions/{slug}/phase4-user-selection.json",
+        f"domain-library run library_phase4_merge_score --slug {slug} --confirm --selection _meta/extractions/{slug}/phase4-user-selection.json",
         "```",
         "",
         "## Rationale packet",

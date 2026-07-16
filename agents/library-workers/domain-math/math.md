@@ -49,6 +49,7 @@ Also write the assigned schema JSON draft path as a real JSON object shaped for 
 - Equations are organized by sub-model when the source supports grouping.
 - Every substantive claim in markdown and JSON cites actual same-slug block IDs.
 - If no numbered equations exist, state that explicitly in `## Author's Formulation` with closest source-index evidence; do not invent formulas.
+- When the unit genuinely has no formula content, set `"no_lane_content": true` in the schema JSON with empty `concepts`/`formulas`/`claims` arrays. The markdown absence statement still cites the closest evidence blocks. Never pad the JSON with off-lane concepts to satisfy the validator.
 - When complete, write both output files and print exactly:
 
   ```text

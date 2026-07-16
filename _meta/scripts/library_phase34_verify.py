@@ -256,7 +256,7 @@ def verify_schema_output(path: Path, slug: str, unit: ExtractionUnit, lane: str,
             if values:
                 issues.extend(f"{key}: {item}" for item in values[:5])
     block_ids = extract_block_ids_from_json(data)
-    if not block_ids:
+    if not block_ids and not (isinstance(data, dict) and data.get("no_lane_content") is True):
         issues.append("no block IDs cited in schema output")
     wrong_slug = sorted({bid for bid in block_ids if not bid.startswith(f"{slug}-")})
     if wrong_slug:

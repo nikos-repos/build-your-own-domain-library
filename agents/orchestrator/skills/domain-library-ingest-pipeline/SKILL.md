@@ -59,11 +59,11 @@ Extraction unit directories use `team-<unit_id>`, where `unit_id` is collision-s
 | --------------- | ------------------------------------ |
 | Orchestrator    | `orchestrator-vision-enrichment.md`  |
 | Orchestrator    | `orchestrator-source-index.md`       |
-| `defs` lane     | `domaindefs-definitions.md`          |
-| `math` lane     | `domainmath-formulas.md`             |
-| `examples` lane | `domainexamples-examples.md`         |
-| `warnings` lane | `domainwarnings-warnings.md`         |
-| `context` lane  | `domaincontext-empirical-context.md` |
+| `defs` lane     | `domain-definitions.md`              |
+| `math` lane     | `domain-math.md`                     |
+| `examples` lane | `domain-examples.md`                 |
+| `warnings` lane | `domain-warnings.md`                 |
+| `context` lane  | `domain-empirical-context.md`        |
 | Assembler       | `team-<unit_id>-presentation.md`     |
 
 Native worker profile names may be prefixed by the project or domain, but generated files should remain stable and predictable.

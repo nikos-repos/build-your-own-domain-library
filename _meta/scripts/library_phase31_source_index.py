@@ -227,7 +227,14 @@ def extract_blocks(unit: ExtractionUnit, slug: str) -> tuple[list[dict[str, Any]
             seen_in_file.add(block_id)
             clean = line[: match.start()].strip()
             if not clean:
-                clean = line.strip()
+                # Standalone anchor line (e.g. a table's block ID): classify the
+                # block it anchors, which is the nearest non-blank line above.
+                for prev in range(line_no - 2, -1, -1):
+                    if lines[prev].strip():
+                        clean = lines[prev].strip()
+                        break
+                else:
+                    clean = line.strip()
             category = classify(clean)
             blocks.append({"block_id": block_id, "line": line_no, "text": clean, "category": category})
     return blocks, failures

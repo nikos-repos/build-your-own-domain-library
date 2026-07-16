@@ -22,7 +22,7 @@ from typing import Any
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 from _meta.scripts import blockid_validator
-import latex_slug_filter
+from _meta.scripts import latex_slug_filter
 from _meta.scripts import team_presentation_assembler as presentation_assembler
 from _meta.scripts import wiki_integrity
 from _meta.scripts import yaml_serializer
