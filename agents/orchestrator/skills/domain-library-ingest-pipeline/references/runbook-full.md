@@ -14,6 +14,22 @@
 
 4. Confirm `.gitignore` covers `.env`, `.obsidian/`, `__pycache__/`, `*:Zone.Identifier`, `chunk*/`, `test*/`.
 
+## Safe phase invalidation
+
+When upstream inputs or a prior phase need rebuilding, invalidate metadata
+first rather than deleting artifacts:
+
+```bash
+domain-library rerun --slug "$SLUG" --from 3.3 --yes
+domain-library next --slug "$SLUG"
+```
+
+The command marks the selected phase and later existing gates `STALE`, stores
+the old gate objects under `previous`, and returns pipeline state to the
+selected phase. It does not delete inputs, reports, chapters, or pages.
+Follow the `next` command; do not hand-edit state/gate JSON or add `--force`
+unless a runner's documented overwrite policy is intentionally required.
+
 ## Phase 1 — API GLM-OCR
 
 Use the `GLM-OCR` skill API path. Store output under:

@@ -74,6 +74,21 @@ All generated final concept pages must adhere to the public `PAGE_SCHEMA.md` and
 
 Worker extraction drafts are intermediate artifacts. They do not need to be final PAGE_SCHEMA concept pages, but they must preserve evidence in a form that allows the page writer to create valid pages later.
 
+## Rerun discipline
+
+Never edit gate or state JSON by hand. To invalidate a phase and all later
+existing gates without deleting artifacts, run:
+
+```bash
+domain-library rerun --slug "$SLUG" --from 3.3 --yes
+domain-library next --slug "$SLUG"
+```
+
+`rerun` preserves each old gate payload under `previous`, changes those gates
+to `STALE`, and writes `READY_FOR_<phase>` state. `STALE` is actionable, not
+drift. The next command remains canonical. A runner's `--force` is separate
+and may have overwrite behavior; do not add it merely to bypass a stale gate.
+
 ## Active command table
 
 The command names below use a neutral `library_` prefix. Replace this prefix with your project's actual runner names if needed, but do not bypass the phase gates.

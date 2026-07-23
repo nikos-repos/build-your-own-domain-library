@@ -41,6 +41,24 @@ from domain_library.pipeline import common as pipeline_common
 
 RUNNER = "library_phase2_chapters.py"
 
+def PHASE_INPUTS(wiki: Path, slug: str, boundaries: Path | None = None) -> list[Path]:
+    raw_root = wiki / "raw" / "papers" / slug
+    default_boundaries = raw_root / "chapter-boundaries.json"
+    return [raw_root / "book_fidelity.md"] + ([boundaries] if boundaries else ([default_boundaries] if default_boundaries.exists() else []))
+
+
+def unchanged_phase22(wiki: Path, slug: str, inputs: list[Path]) -> bool:
+    if not all(path.exists() for path in inputs):
+        return False
+    path = gate_path(wiki, slug, "2.2")
+    if not path.exists():
+        return False
+    gate = read_json(path)
+    return gate.get("status") == "PASS" and gate.get("input_fingerprints") == pipeline_common.fingerprint_paths(inputs)
+
+
+
+
 
 def write_state(wiki: Path, slug: str, status: str, current_phase: str, completed: list[str], gates: dict[str, str]) -> None:
     pipeline_common.write_state(wiki, slug, status, current_phase, completed, gates, runner=RUNNER)
@@ -142,6 +160,11 @@ def main() -> None:
     manifest_path = raw_root / "manifest.json"
     default_boundaries = raw_root / "chapter-boundaries.json"
     boundaries_path = Path(args.boundaries).resolve() if args.boundaries else (default_boundaries if default_boundaries.exists() else None)
+    phase_inputs = PHASE_INPUTS(wiki, slug, boundaries_path)
+
+    if not args.force and unchanged_phase22(wiki, slug, phase_inputs):
+        print("SKIP (unchanged)")
+        return
 
     gates: dict[str, str] = {}
     completed: list[str] = []
@@ -183,6 +206,7 @@ def main() -> None:
                 "unit_count": manifest["unit_count"],
                 "phase_1_5_gate": phase15,
             },
+            inputs=phase_inputs,
         )
         gates["2.1"] = rel(phase21_gate, wiki)
 
@@ -198,6 +222,7 @@ def main() -> None:
                 "unit_count": validation["unit_count"],
                 "units": validation["units"],
             },
+            inputs=phase_inputs,
         )
         gates["2.2"] = rel(phase22_gate, wiki)
         for phase in ["2.1", "2.2"]:

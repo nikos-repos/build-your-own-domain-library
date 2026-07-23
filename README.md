@@ -48,6 +48,22 @@ The canonical phase workflow is the [ingest skill](agents/orchestrator/skills/do
 
 Setup is intended to take only a few minutes after Python and an OCR key are available. Full ingestion time and OCR cost will scale with document size.
 
+## Safe reruns
+
+To re-run a phase without deleting source or generated artifacts:
+
+```bash
+domain-library rerun --slug "$SLUG" --from 3.3 --yes
+domain-library next --slug "$SLUG"
+```
+
+`rerun` marks only existing gates at and after the selected phase `STALE`,
+preserves each old gate under `previous`, and moves state back to that phase.
+It writes metadata only. For Phase 2, an unchanged `book_fidelity.md` and
+optional `chapter-boundaries.json` produce `SKIP (unchanged)` instead of
+rewriting chapter artifacts. Do not use a runner's `--force` unless its
+documented overwrite behavior is intended.
+
 ## Domain Library specific language
 
 * **slug** — set ID of one source book (ex: `davey-2014`). Indexes everything by name.
@@ -55,6 +71,7 @@ Setup is intended to take only a few minutes after Python and an OCR key are ava
 * **unit** — one extraction work parcel (a chapter, or a ≤2000-line part of one).
 * **lane** — one specialist extraction role (definitions, formulas, examples, warnings, empirical context). One agent task per unit × lane.
 * **gate** — machine-written JSON under `_meta/extractions/<slug>/gates/` recording PASS/FAIL for a phase. Every phase writes one; every phase checks its predecessor's.
+* **STALE gate** — a prior gate invalidated by `domain-library rerun`; its old payload remains nested under `previous`, and `domain-library next` gives the phase command to rebuild it.
 * **embed** — Obsidian transclusion `![[target#^block-id]]` that renders the source passage inside a concept page.
 
 ## Maintaining the pipeline

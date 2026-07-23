@@ -8,6 +8,18 @@ The configured lane set, output filenames, and required sections all are borne o
 
 Each phase runner fails closed: a failed gate blocks the next phase from running until the underlying cause is fixed by the orchestrator and that runner is rerun. `--prepare` in Phase 3.3 and Phase 4 is not a pass gate.
 
+To invalidate derived phase metadata without deleting inputs or artifacts, run
+`domain-library rerun --slug "$SLUG" --from 3.3 --yes`. It marks the named
+phase and later existing gates `STALE`, then `domain-library next` prints the
+canonical command for the selected phase. `--yes` is required; it never deletes
+files.
+
+Phase 2 records SHA-256 fingerprints for `book_fidelity.md` and the active
+`chapter-boundaries.json`, when present. A repeated invocation with matching
+inputs prints `SKIP (unchanged)` before it touches state, gates, manifests, or
+chapters. This is distinct from `--force`, which retains its documented
+overwrite behavior.
+
 ## Flowchart
 
 ```mermaid

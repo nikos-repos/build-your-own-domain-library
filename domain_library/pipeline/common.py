@@ -10,6 +10,7 @@ satisfying the llm-wiki rule "after every wiki write, update log.md".
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -102,10 +103,56 @@ def state_path(wiki: Path, slug: str) -> Path:
     return extraction_root(wiki, slug) / "pipeline-state.json"
 
 
-def write_gate(wiki: Path, slug: str, phase: str, status: str, payload: dict[str, Any]) -> Path:
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as fh:
+        while chunk := fh.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def fingerprint_paths(paths: list[Path]) -> dict[str, str]:
+    """Return deterministic content fingerprints keyed relative to their parent."""
+    resolved = sorted({path.resolve() for path in paths}, key=str)
+    if not resolved:
+        return {}
+    root = Path(os.path.commonpath(resolved))
+    if root in resolved:
+        root = root.parent
+
+    fingerprints: dict[str, str] = {}
+    for path in resolved:
+        if path.is_file():
+            fingerprints[rel(path, root)] = _sha256_file(path)
+        elif path.is_dir():
+            digest = hashlib.sha256()
+            for child in sorted((item for item in path.rglob("*") if item.is_file()), key=lambda item: str(item.relative_to(path))):
+                digest.update(rel(child, path).encode())
+                digest.update(b"\0")
+                digest.update(_sha256_file(child).encode())
+                digest.update(b"\n")
+            fingerprints[rel(path, root)] = digest.hexdigest()
+        else:
+            raise FileNotFoundError(f"cannot fingerprint missing input: {path}")
+    return fingerprints
+
+
+def write_gate(
+    wiki: Path,
+    slug: str,
+    phase: str,
+    status: str,
+    payload: dict[str, Any],
+    inputs: list[Path] | None = None,
+) -> Path:
+    gate = {"phase": phase, "status": status, "slug": slug, "generated_at": utc_now(), **payload}
+    if inputs is not None:
+        gate["input_fingerprints"] = fingerprint_paths(inputs)
     path = gate_path(wiki, slug, phase)
-    write_json(path, {"phase": phase, "status": status, "slug": slug, "generated_at": utc_now(), **payload})
+    write_json(path, gate)
     return path
+
+
 
 
 def load_state(wiki: Path, slug: str) -> dict[str, Any]:

@@ -12,12 +12,13 @@ import sys
 from pathlib import Path
 
 from domain_library.paths import repository_root
-from domain_library.pipeline.common import load_domain_config, validate_slug
+from domain_library.pipeline.common import gate_path, load_state, read_json, validate_slug, write_gate, write_state
 
 ROOT = repository_root(Path(__file__))
 SCRIPTS = ROOT / "_meta" / "scripts"
 
 NEXT = ROOT / "agents" / "orchestrator" / "skills" / "domain-library-run-and-operate" / "scripts" / "pipeline_next.py"
+PHASE_ORDER = ("1", "1.5", "2.1", "2.2", "2.3", "2.4", "3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "4", "5", "post")
 RUNNERS = (
     "block_annotator",
     "blockid_validator",
@@ -151,6 +152,30 @@ def restart(args: argparse.Namespace) -> int:
     return 0
 
 
+def rerun(args: argparse.Namespace) -> int:
+    slug = validate_slug(args.slug)
+    if not args.yes:
+        print("refusing rerun without --yes", file=sys.stderr)
+        return 2
+
+    phase = args.from_phase
+    state = load_state(ROOT, slug)
+    gates = {str(key): str(value) for key, value in (state.get("gates") or {}).items()}
+    for stale_phase in PHASE_ORDER[PHASE_ORDER.index(phase):]:
+        path = gate_path(ROOT, slug, stale_phase)
+        if not path.exists():
+            continue
+        previous = read_json(path)
+        gate = write_gate(ROOT, slug, stale_phase, "STALE", {"previous": previous})
+        gates[stale_phase] = str(gate.relative_to(ROOT))
+
+    completed = [item for item in state.get("completed_phases", []) if str(item) in PHASE_ORDER[:PHASE_ORDER.index(phase)]]
+    status = "READY_FOR_POST" if phase == "post" else f"READY_FOR_{phase}"
+    write_state(ROOT, slug, status, phase, [str(item) for item in completed], gates, runner="library.py rerun")
+    print(json.dumps({"status": status, "slug": slug, "from": phase}))
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="command", required=True)
@@ -178,6 +203,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--slug", required=True)
     p.add_argument("--yes", action="store_true")
     p.set_defaults(func=restart)
+    p = sub.add_parser("rerun", help="mark one phase and later gates stale without deleting artifacts")
+    p.add_argument("--slug", required=True)
+    p.add_argument("--from", dest="from_phase", choices=PHASE_ORDER, required=True)
+    p.add_argument("--yes", action="store_true")
+    p.set_defaults(func=rerun)
     return ap
 
 

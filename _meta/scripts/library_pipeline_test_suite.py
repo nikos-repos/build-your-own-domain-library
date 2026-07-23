@@ -2,6 +2,7 @@
 """Executable smoke tests for proposed Domain Library pipeline architecture."""
 from __future__ import annotations
 
+import argparse
 import json
 import importlib.util
 import os
@@ -459,6 +460,87 @@ def test_phase2_manual_boundaries_write_gates(tmp: Path) -> None:
     assert gate22["status"] == "PASS"
     state = json.loads((wiki / "_meta" / "extractions" / slug / "pipeline-state.json").read_text(encoding="utf-8"))
     assert state["status"] == "READY_FOR_2.3"
+
+    before = {
+        path: path.read_bytes()
+        for path in (
+            raw / "manifest.json",
+            wiki / "_meta" / "extractions" / slug / "gates" / "phase-2.1.json",
+            wiki / "_meta" / "extractions" / slug / "gates" / "phase-2.2.json",
+            wiki / "_meta" / "extractions" / slug / "pipeline-state.json",
+        )
+    }
+    second = run([sys.executable, str(SCRIPT_DIR / "library_phase2_chapters.py"), "--slug", slug, "--wiki", str(wiki)])
+    assert second.returncode == 0, second.stderr + second.stdout
+    assert "SKIP (unchanged)" in second.stdout
+    assert {path: path.read_bytes() for path in before} == before
+
+
+def test_fingerprint_paths_are_stable_and_content_addressed(tmp: Path) -> None:
+    from domain_library.pipeline.common import fingerprint_paths
+
+    tree = tmp / "tree"
+    tree.mkdir()
+    first = tree / "a.txt"
+    second = tree / "b.txt"
+    first.write_text("alpha", encoding="utf-8")
+    second.write_text("beta", encoding="utf-8")
+    standalone = tmp / "standalone.txt"
+    standalone.write_text("gamma", encoding="utf-8")
+
+    initial = fingerprint_paths([tree, standalone])
+    assert initial == fingerprint_paths([standalone, tree])
+    second.write_text("changed", encoding="utf-8")
+    assert initial != fingerprint_paths([tree, standalone])
+
+
+def test_rerun_marks_only_requested_and_later_gates_stale(tmp: Path) -> None:
+    import library
+
+    wiki = tmp / "wiki"
+    slug = "book-rerun"
+    root = wiki / "_meta" / "extractions" / slug
+    gates = root / "gates"
+    gates.mkdir(parents=True)
+    records = {}
+    for phase in ("3.2", "3.3", "3.4"):
+        path = gates / f"phase-{phase}.json"
+        record = {"phase": phase, "status": "PASS", "slug": slug, "marker": phase}
+        path.write_text(json.dumps(record), encoding="utf-8")
+        records[phase] = (path, record)
+    (root / "pipeline-state.json").write_text(
+        json.dumps(
+            {
+                "slug": slug,
+                "status": "READY_FOR_3.5",
+                "current_phase": "3.4",
+                "completed_phases": ["3.2", "3.3", "3.4"],
+                "gates": {phase: str(path.relative_to(wiki)) for phase, (path, _) in records.items()},
+            }
+        ),
+        encoding="utf-8",
+    )
+    sentinel = wiki / "raw" / "papers" / slug / "artifact.txt"
+    sentinel.parent.mkdir(parents=True)
+    sentinel.write_text("preserve", encoding="utf-8")
+    original_root = library.ROOT
+    library.ROOT = wiki
+    try:
+        assert library.rerun(argparse.Namespace(slug=slug, from_phase="3.3", yes=False)) == 2
+        assert json.loads(records["3.3"][0].read_text(encoding="utf-8")) == records["3.3"][1]
+        assert library.rerun(argparse.Namespace(slug=slug, from_phase="3.3", yes=True)) == 0
+    finally:
+        library.ROOT = original_root
+
+    assert json.loads(records["3.2"][0].read_text(encoding="utf-8")) == records["3.2"][1]
+    for phase in ("3.3", "3.4"):
+        gate = json.loads(records[phase][0].read_text(encoding="utf-8"))
+        assert gate["status"] == "STALE"
+        assert gate["previous"] == records[phase][1]
+    state = json.loads((root / "pipeline-state.json").read_text(encoding="utf-8"))
+    assert state["status"] == "READY_FOR_3.3"
+    assert state["completed_phases"] == ["3.2"]
+    assert sentinel.read_text(encoding="utf-8") == "preserve"
 
 
 def test_chapter_splitter_rejects_fallback(tmp: Path) -> None:
@@ -1690,6 +1772,34 @@ def test_integrity_detects_target_missing_and_ambiguous(tmp: Path) -> None:
         "![[source#^book-x-ch01-0001]]\n![[ch-01-intro#^book-x-ch01-0001]]\n",
     )
     assert [f["status"] for f in findings] == ["target_missing", "target_ambiguous"]
+
+
+def test_pipeline_next_routes_stale_phase_without_drift(tmp: Path) -> None:
+    wiki = tmp / "wiki"
+    slug = "book-stale"
+    root = wiki / "_meta" / "extractions" / slug
+    gates = root / "gates"
+    gates.mkdir(parents=True)
+    gate_paths = {}
+    for phase, status in (("3.2", "PASS"), ("3.3", "STALE")):
+        path = gates / f"phase-{phase}.json"
+        path.write_text(json.dumps({"phase": phase, "status": status, "slug": slug}), encoding="utf-8")
+        gate_paths[phase] = str(path.relative_to(wiki))
+    (root / "pipeline-state.json").write_text(
+        json.dumps(
+            {
+                "slug": slug,
+                "status": "READY_FOR_3.3",
+                "current_phase": "3.3",
+                "completed_phases": ["3.2"],
+                "gates": gate_paths,
+            }
+        ),
+        encoding="utf-8",
+    )
+    proc = run_pipeline_next(wiki, slug)
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    assert "domain-library run library_phase33_dispatch" in proc.stdout
 
 
 def test_integrity_detects_malformed_forms(tmp: Path) -> None:

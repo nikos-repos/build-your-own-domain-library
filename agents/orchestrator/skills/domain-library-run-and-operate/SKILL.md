@@ -61,6 +61,19 @@ The complete phase order: `1 → 1.5 → 2.1 → 2.2 → 2.3 → 2.4 → 3.0 →
 CONFIRM → confirm) → 5 → post (grounding QA + audit)`. Phases 1/1.5 and
 2.1/2.2 share a runner each.
 
+## Non-destructive rerun
+
+To rerun from a phase without removing source or generated artifacts:
+
+```bash
+domain-library rerun --slug "$SLUG" --from 3.3 --yes
+domain-library next --slug "$SLUG"
+```
+
+`rerun` only marks existing gates at and after the selected phase `STALE` and
+updates pipeline state. It refuses without `--yes`; use a phase runner's
+documented `--force` only when its overwrite behavior is explicitly intended.
+
 ## Two special phases
 
 - **3.3 is three steps**, and only the middle one involves agents:

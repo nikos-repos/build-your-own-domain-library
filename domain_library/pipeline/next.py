@@ -67,6 +67,21 @@ NEXT = {
     "LEGACY_FROZEN": "Nothing. This slug is frozen pre-gate legacy content; do not run phase runners on it.",
 }
 
+GATE_READY_STATUSES = {"PASS", "AWAITING_USER_CONFIRMATION", "STALE"}
+
+
+def phase_one_rerun_command(root: Path, slug: str) -> str:
+    path = root / "gates" / "phase-1.json"
+    if not path.exists():
+        return "BLOCKED. Phase 1 gate is missing; source PDF path is unavailable."
+    gate = json.loads(path.read_text(encoding="utf-8"))
+    while isinstance(gate, dict) and "source_pdf" not in gate and isinstance(gate.get("previous"), dict):
+        gate = gate["previous"]
+    source_pdf = gate.get("source_pdf") if isinstance(gate, dict) else None
+    if not source_pdf:
+        return "BLOCKED. Phase 1 gate does not record a source PDF path."
+    return f"domain-library start --slug {slug} --pdf {source_pdf}"
+
 
 def inspect(wiki: Path, slug: str) -> dict:
     root = wiki / "_meta" / "extractions" / slug
@@ -128,18 +143,20 @@ def inspect(wiki: Path, slug: str) -> dict:
             continue
         if str(gate.get("phase")) != str(phase):
             out["drift"].append(f"phase {phase}: gate file declares phase {gate.get('phase')!r}")
-        if gate.get("status") not in ("PASS", "AWAITING_USER_CONFIRMATION"):
+        if gate.get("status") not in GATE_READY_STATUSES:
             out["drift"].append(f"phase {phase}: recorded gate status is {gate.get('status')!r}")
         disk = on_disk.get(str(phase))
         if not disk or disk["path"].resolve() != gate_path:
             out["drift"].append(f"phase {phase}: recorded gate path does not match gates/phase-{phase}.json")
     for phase in sorted(set(on_disk) - {str(p) for p in recorded}):
         out["drift"].append(f"unrecorded gate file: gates/phase-{phase}.json")
-    bad = [p for p, gate in on_disk.items() if gate["status"] not in ("PASS", "AWAITING_USER_CONFIRMATION")]
+    bad = [phase for phase, gate in on_disk.items() if gate["status"] not in GATE_READY_STATUSES]
     if bad and status not in ("FAILED", "IN_PROGRESS"):
         out["drift"].append(f"non-PASS gate(s) {bad} under a ready status — a phase failed after state advanced")
 
-    if status in NEXT:
+    if status in ("READY_FOR_1", "READY_FOR_1.5"):
+        out["next"] = phase_one_rerun_command(root, slug)
+    elif status in NEXT:
         out["next"] = NEXT[status].format(slug=slug)
     elif status == "FAILED":
         out["next"] = (
