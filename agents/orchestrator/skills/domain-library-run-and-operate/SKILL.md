@@ -74,6 +74,14 @@ domain-library next --slug "$SLUG"
 updates pipeline state. It refuses without `--yes`; use a phase runner's
 documented `--force` only when its overwrite behavior is explicitly intended.
 
+## Claim grounding outcomes
+
+After Phase 3.4, inspect
+`_meta/extractions/<slug>/specialist-verification.json` for per-claim
+`claim_grounding` results. A mismatched `EXTRACTED` quote is demoted to
+`AMBIGUOUS`, not silently accepted. Continue only when the gate passes: more
+than 20% demotions among a lane's EXTRACTED claims fails that lane.
+
 ## Two special phases
 
 - **3.3 is three steps**, and only the middle one involves agents:

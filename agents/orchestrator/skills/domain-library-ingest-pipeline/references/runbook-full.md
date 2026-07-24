@@ -197,6 +197,14 @@ domain-library run library_phase34_verify --slug "$SLUG"
 
 The runner requires Phase 3.3 `PASS` and verifies only the recorded recorded unit/lane outputs. Markdown outputs must exist, be non-empty, contain required lane sections, avoid placeholder/slop markers, cite only same-unit same-slug source-index block IDs, and pass evidence-hygiene checks: no `related_to::`, no bare block-evidence predicates without `#^`, no bracketed block IDs, and no malformed extra-bracket embeds. Schema JSON drafts under `_meta/extractions/$SLUG/schema/` must be exactly the files declared by dispatch and must pass `_meta/scripts/schemas/extraction_schema.py`. The runner writes `specialist-verification.json`, `schema-validation-report.json`, `_validation_passed`, and `pipeline-run-manifest.json`, then advances state to `READY_FOR_3.5`. `_validation_passed` is invalid if hand-written or stale; the runner removes stale markers on failure.
 
+For each schema JSON claim, Phase 3.4 requires
+`confidence: EXTRACTED|INFERRED|AMBIGUOUS`. An `EXTRACTED` claim must carry
+`quote_verbatim` copied from its cited source-index block. The verifier
+normalizes whitespace and markdown emphasis, records per-claim grounding in
+`specialist-verification.json`, and demotes mismatched spans to `AMBIGUOUS`.
+That demotion does not fail an otherwise good lane; more than 20% demotions
+among its EXTRACTED claims does.
+
 Phase 3.4 deliberately does not check `team-<unit_id>-presentation.md`. Presentation assembly and presentation-specific validation happen in Phase 3.5, fixing the old ordering mismatch where the verifier expected a later artifact.
 
 Phase 3.5 team presentation assembly is gated by:
@@ -216,6 +224,11 @@ domain-library run library_phase4_merge_score --slug "$SLUG" --prepare
 ```
 
 The prepare step requires Phase 3.5 `PASS`, the Phase 3.4 schema validation marker/report, and schema JSON drafts under `_meta/extractions/$SLUG/schema/`. It merges and scores schema JSON with `scoring_layer.py`, applies threshold/top-N, filters LaTeX/artifact slugs with `latex_slug_filter.py`, validates all schema JSON block IDs against active chapters with `blockid_validator.py`, writes `_blockid_valid`, and writes `concept-selection-candidates.md/json` plus `concept-selection-rationale-packet.md/json`. The rationale packet is mandatory: every scored concept stays visible with supporting lanes, strongest block IDs, source-section diversity, duplicate/alias risks, and a reason for inclusion or exclusion. The phase gate is `AWAITING_USER_CONFIRMATION`, not `PASS`.
+
+Claims labeled or demoted to `AMBIGUOUS` lower the scores of concepts sharing
+their cited blocks and remain grouped under `## Needs human eyes` in the
+rationale packet. The human reviewer must consider that evidence before
+confirming a concept.
 
 Present `concept-selection-candidates.md` and `concept-selection-rationale-packet.md` to the human reviewer. After the human reviewer selects slugs, write:
 
@@ -245,6 +258,11 @@ domain-library run library_phase5_pages --slug "$SLUG"
 The runner consumes `master-confirmed.json` to know which concepts the human reviewer approved, but page prose and evidence come from Phase 3.5 team presentations. It refuses existing pages unless `--force` is explicitly provided. Generated concept pages live under `concepts/`, use `yaml_serializer.py` frontmatter ordering, update `index.md` and `log.md`, and must include `## Author's Words`, `## Source-grounded definition`, `## Specific Example`, `## Relations`, `## Evidence index`, at least two block embeds, at least two substantial quote lines, and `extracted_from::` provenance. `derived_from::` is forbidden for initial extraction pages.
 
 The runner writes `_meta/extractions/$SLUG/page-build-report.json`, `_meta/extractions/$SLUG/gates/phase-5.json`, and advances state to `READY_FOR_POST`. Do not use book-specific direct page builders for this phase.
+
+When a confirmed concept carries an `INFERRED` claim, Phase 5 preserves the
+interpretation but renders it as `⚠ **Inferred claim:**` beside the
+source-grounded definition. This marker distinguishes inference from direct
+quoted evidence; it does not replace block provenance.
 
 ## Post — final audit
 

@@ -137,7 +137,7 @@ def dispatch_lookup(report: dict[str, Any]) -> dict[tuple[str, str], dict[str, A
     return out
 
 
-def source_blocks_for_unit(wiki: Path, slug: str, unit: ExtractionUnit) -> set[str]:
+def source_block_texts_for_unit(wiki: Path, slug: str, unit: ExtractionUnit) -> dict[str, str]:
     index = extraction_root(wiki, slug) / f"team-{unit.unit_id}" / "orchestrator-source-index.md"
     if not index.exists() or index.stat().st_size == 0:
         raise FileNotFoundError(f"missing source index for {unit.unit_id}: {index}")
@@ -147,7 +147,11 @@ def source_blocks_for_unit(wiki: Path, slug: str, unit: ExtractionUnit) -> set[s
     blocks = data.get("blocks")
     if not isinstance(blocks, list) or not blocks:
         raise RuntimeError(f"source index has no blocks for {unit.unit_id}: {index}")
-    return {str(block.get("block_id")) for block in blocks if isinstance(block, dict) and block.get("block_id")}
+    return {
+        str(block["block_id"]): str(block.get("text", ""))
+        for block in blocks
+        if isinstance(block, dict) and block.get("block_id")
+    }
 
 
 def markdown_sections(text: str) -> set[str]:
@@ -172,6 +176,53 @@ def extract_block_ids_from_json(value: Any) -> list[str]:
         for item in value:
             out.extend(extract_block_ids_from_json(item))
     return out
+
+
+MARKDOWN_EMPHASIS_RE = re.compile(r"[*_`]+")
+
+
+def normalize_quote(value: str) -> str:
+    return " ".join(MARKDOWN_EMPHASIS_RE.sub("", value).split())
+
+
+def verify_claim_grounding(data: Any, block_texts: dict[str, str]) -> dict[str, Any]:
+    records: list[dict[str, Any]] = []
+    claims = data.get("claims", []) if isinstance(data, dict) else []
+    if not isinstance(claims, list):
+        return {"claim_count": 0, "extracted_count": 0, "demotion_count": 0, "claims": records}
+    for index, claim in enumerate(claims):
+        if not isinstance(claim, dict):
+            continue
+        confidence = claim.get("confidence")
+        quote = str(claim.get("quote_verbatim", ""))
+        block_id = str(claim.get("block_id", ""))
+        record = {
+            "claim_index": index,
+            "block_id": block_id,
+            "confidence": confidence,
+            "quote_verbatim": quote,
+            "effective_confidence": confidence,
+            "demoted": False,
+            "reason": "",
+        }
+        if confidence == "EXTRACTED":
+            block_text = block_texts.get(block_id, "")
+            if not normalize_quote(quote) or normalize_quote(quote) not in normalize_quote(block_text):
+                record.update(
+                    {
+                        "effective_confidence": "AMBIGUOUS",
+                        "demoted": True,
+                        "reason": "quote_verbatim not found in cited source-index block",
+                    }
+                )
+        records.append(record)
+    extracted = [record for record in records if record["confidence"] == "EXTRACTED"]
+    return {
+        "claim_count": len(records),
+        "extracted_count": len(extracted),
+        "demotion_count": sum(1 for record in extracted if record["demoted"]),
+        "claims": records,
+    }
 
 
 def verify_markdown_output(path: Path, slug: str, lane: str, valid_blocks: set[str], vault_index: wiki_integrity.VaultIndex) -> dict[str, Any]:
@@ -229,7 +280,14 @@ def verify_markdown_output(path: Path, slug: str, lane: str, valid_blocks: set[s
     }
 
 
-def verify_schema_output(path: Path, slug: str, unit: ExtractionUnit, lane: str, valid_blocks: set[str]) -> dict[str, Any]:
+def verify_schema_output(
+    path: Path,
+    slug: str,
+    unit: ExtractionUnit,
+    lane: str,
+    valid_blocks: set[str],
+    block_texts: dict[str, str],
+) -> dict[str, Any]:
     issues: list[str] = []
     data: Any = None
     if not path.exists():
@@ -272,8 +330,11 @@ def verify_schema_output(path: Path, slug: str, unit: ExtractionUnit, lane: str,
         "block_id_count": len(block_ids),
         "unique_block_ids": len(set(block_ids)),
         "schema_validation": validation,
+        "claim_grounding": verify_claim_grounding(data, block_texts),
         "issues": issues,
     }
+
+
 
 
 def verify_dispatch_report(wiki: Path, slug: str, dispatch_report: dict[str, Any], units: list[ExtractionUnit]) -> tuple[dict[tuple[str, str], dict[str, Any]], list[str]]:
@@ -334,7 +395,8 @@ def run_verification(wiki: Path, slug: str) -> tuple[dict[str, Any], dict[str, A
         raise FileNotFoundError(f"chapters directory not found: {chapters_dir}")
     units = discover_current_units(chapters_dir, slug)
     lookup, dispatch_failures = verify_dispatch_report(wiki, slug, dispatch_report, units)
-    valid_blocks_by_unit = {unit.unit_id: source_blocks_for_unit(wiki, slug, unit) for unit in units}
+    block_texts_by_unit = {unit.unit_id: source_block_texts_for_unit(wiki, slug, unit) for unit in units}
+    valid_blocks_by_unit = {unit_id: set(block_texts) for unit_id, block_texts in block_texts_by_unit.items()}
     vault_index = wiki_integrity.build_vault_index(wiki)
     expected_schema_paths: set[Path] = set()
     results: list[dict[str, Any]] = []
@@ -348,7 +410,13 @@ def run_verification(wiki: Path, slug: str) -> tuple[dict[str, Any], dict[str, A
             expected_schema_paths.add(schema_path.resolve())
             valid_blocks = valid_blocks_by_unit[unit.unit_id]
             markdown = verify_markdown_output(markdown_path, slug, lane, valid_blocks, vault_index)
-            schema = verify_schema_output(schema_path, slug, unit, lane, valid_blocks)
+            schema = verify_schema_output(schema_path, slug, unit, lane, valid_blocks, block_texts_by_unit[unit.unit_id])
+            grounding = schema.get("claim_grounding", {})
+            extracted = int(grounding.get("extracted_count", 0))
+            demotions = int(grounding.get("demotion_count", 0))
+            if extracted and demotions / extracted > 0.2:
+                schema["issues"].append(f"quote grounding demoted {demotions}/{extracted} EXTRACTED claims (>20%)")
+                schema["valid"] = False
             issues = list(markdown["issues"]) + list(schema["issues"])
             if issues:
                 failures.extend(f"{unit.unit_id}/{lane}: {issue}" for issue in issues)
@@ -378,9 +446,16 @@ def run_verification(wiki: Path, slug: str) -> tuple[dict[str, Any], dict[str, A
         failures.append(f"missing declared schema JSON files: {[rel(path, wiki) for path in missing_schema[:10]]}")
 
     schema_details = [row["schema"]["schema_validation"] for row in results if row["schema"].get("schema_validation")]
-    valid_count = sum(1 for detail in schema_details if detail.get("valid"))
+    valid_count = sum(1 for row in results if row["schema"].get("valid"))
+    grounding_failures = [
+        row["schema"]["path"]
+        for row in results
+        if int(row["schema"].get("claim_grounding", {}).get("extracted_count", 0))
+        and int(row["schema"].get("claim_grounding", {}).get("demotion_count", 0))
+        / int(row["schema"]["claim_grounding"]["extracted_count"]) > 0.2
+    ]
     schema_report = {
-        "status": "PASS" if valid_count == len(schema_details) and len(schema_details) == len(expected_schema_paths) and not unexpected and not missing_schema else "FAIL",
+        "status": "PASS" if valid_count == len(expected_schema_paths) and not unexpected and not missing_schema else "FAIL",
         "slug": slug,
         "generated_at": utc_now(),
         "generated_by": RUNNER,
@@ -388,9 +463,10 @@ def run_verification(wiki: Path, slug: str) -> tuple[dict[str, Any], dict[str, A
         "expected": len(expected_schema_paths),
         "total": len(schema_details),
         "valid": valid_count,
-        "invalid": len(schema_details) - valid_count,
+        "invalid": len(expected_schema_paths) - valid_count,
         "unexpected_files": [rel(path, wiki) for path in unexpected],
         "missing_files": [rel(path, wiki) for path in missing_schema],
+        "grounding_failures": grounding_failures,
         "details": schema_details,
     }
     if schema_report["status"] != "PASS":
@@ -410,6 +486,11 @@ def run_verification(wiki: Path, slug: str) -> tuple[dict[str, Any], dict[str, A
         "unit_count": len(units),
         "lane_count": len(phase33.LANES),
         "schema_validation_report": rel(schema_report_path(wiki, slug), wiki),
+        "claim_grounding": {
+            "claim_count": sum(int(row["schema"].get("claim_grounding", {}).get("claim_count", 0)) for row in results),
+            "extracted_count": sum(int(row["schema"].get("claim_grounding", {}).get("extracted_count", 0)) for row in results),
+            "demotion_count": sum(int(row["schema"].get("claim_grounding", {}).get("demotion_count", 0)) for row in results),
+        },
         "results": results,
         "failures": failures,
     }

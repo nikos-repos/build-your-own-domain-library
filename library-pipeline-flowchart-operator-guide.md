@@ -20,6 +20,13 @@ inputs prints `SKIP (unchanged)` before it touches state, gates, manifests, or
 chapters. This is distinct from `--force`, which retains its documented
 overwrite behavior.
 
+Specialist JSON claims use `EXTRACTED`, `INFERRED`, or `AMBIGUOUS` confidence.
+Phase 3.4 checks every `EXTRACTED` `quote_verbatim` span against the cited
+source-index block. A mismatch is reported as `AMBIGUOUS`; a lane fails only
+when more than 20% of its EXTRACTED claims are demoted. Phase 4 down-weights
+ambiguous evidence and presents it under `Needs human eyes`; Phase 5 marks
+INFERRED claims with `⚠`.
+
 ## Flowchart
 
 ```mermaid

@@ -21,6 +21,8 @@ Write the assigned `domain-warnings.md` containing exactly these level-2 section
 
 Also write the assigned schema JSON draft path as a real JSON object shaped for `_meta/scripts/schemas/extraction_schema.py`: `source`, `chapter`, `chapter_title`, `extracted_at`, `concepts`, `entities`, `formulas`, and `claims`.
 
+For every JSON `claims` item, set `confidence` to `EXTRACTED` for a direct source statement, `INFERRED` for a reasoned interpretation, or `AMBIGUOUS` when the evidence is insufficient. `EXTRACTED` requires `quote_verbatim` copied exactly from the cited block.
+
 ## Task
 
 1. Read the `## Warnings / Caveats` section in `orchestrator-source-index.md` to locate relevant block IDs.

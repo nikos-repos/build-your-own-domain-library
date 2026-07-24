@@ -273,6 +273,21 @@ def normalize_section_body(text: str, fallback: str, evidence_blocks: list[str],
     return fallback
 
 
+def inferred_claim_notes(concept: dict[str, Any], source_slug: str, refs: dict[str, str]) -> str:
+    lines: list[str] = []
+    for claim in concept.get("claims", []):
+        if not isinstance(claim, dict) or claim.get("confidence") != "INFERRED":
+            continue
+        block_id = str(claim.get("block_id", ""))
+        if not block_id:
+            continue
+        lines.append(
+            f"⚠ **Inferred claim:** {claim.get('text', '')} "
+            f"(interpretation of ![[{refs.get(block_id, source_slug)}#^{block_id}]])"
+        )
+    return "\n\n".join(lines)
+
+
 def render_relations(source_slug: str, evidence_blocks: list[str], concept: dict[str, Any], refs: dict[str, str]) -> str:
     lines = ["## Relations", ""]
     primary_name = concept.get("name") or concept.get("slug")
@@ -378,8 +393,17 @@ def render_page(source_slug: str, concept: dict[str, Any], relevant_presentation
         "",
     ]
 
+    definition_body = normalize_section_body(
+        rich_def,
+        "Definition evidence is source-grounded in the listed blocks.",
+        evidence_blocks,
+        source_slug,
+        refs,
+    )
+    if inferred_notes := inferred_claim_notes(concept, source_slug, refs):
+        definition_body += f"\n\n{inferred_notes}"
     parts.extend(["## Author's Words", "", normalize_section_body(authors_words, "No direct author quote section was available in the team presentation.", evidence_blocks, source_slug, refs), ""])
-    parts.extend(["## Source-grounded definition", "", normalize_section_body(rich_def, "Definition evidence is source-grounded in the listed blocks.", evidence_blocks, source_slug, refs), ""])
+    parts.extend(["## Source-grounded definition", "", definition_body, ""])
     for page_header, body in section_bodies:
         parts.extend([f"## {page_header}", "", normalize_section_body(body, f"No separate `{page_header}` content was present for this concept; provenance remains anchored below.", evidence_blocks, source_slug, refs), ""])
 

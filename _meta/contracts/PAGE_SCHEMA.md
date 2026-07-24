@@ -117,6 +117,8 @@ Predicates are **underscored**, lowercase, and preferred to be multi-word.
 
 `quality:` is computed at build time from section completeness, author-quote count, evidence-block count. Page creation is gated for real signals. `quality_notes` records the inputs.
 
+Claim-level labels remain visible in the body: Phase 5 renders `⚠ **Inferred claim:**` beside every JSON claim labeled `INFERRED`. `EXTRACTED` claims require a verbatim supporting span; `AMBIGUOUS` claims remain in the Phase 4 human-review packet rather than receiving a page marker.
+
 ## Superseded Page Policy.
 
 When a new claim contradicts an existing one:

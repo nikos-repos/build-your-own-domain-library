@@ -1240,6 +1240,107 @@ def test_pipeline_manifest_consumes_runtime_dispatch(tmp: Path) -> None:
     assert all(task["schema_output"]["path"].endswith(".json") for task in specialist_tasks)
 
 
+def test_claim_confidence_schema_matrix(tmp: Path) -> None:
+    from _meta.scripts.schemas.extraction_schema import Claim
+
+    base = {
+        "text": "This fixture claim contains enough text to validate.",
+        "block_id": "book-claim-ch01-0001",
+        "confidence_marker": "authoritative",
+    }
+    assert Claim(**base, confidence="EXTRACTED", quote_verbatim="This fixture claim").confidence == "EXTRACTED"
+    assert Claim(**base, confidence="INFERRED").quote_verbatim == ""
+    assert Claim(**base, confidence="AMBIGUOUS").quote_verbatim == ""
+    try:
+        Claim(**base, confidence="EXTRACTED")
+    except ValueError as exc:
+        assert "quote_verbatim" in str(exc)
+    else:
+        raise AssertionError("EXTRACTED claim without quote_verbatim was accepted")
+
+
+def test_phase34_demotes_wrong_quote_without_failing_lane(tmp: Path) -> None:
+    wiki = tmp / "wiki"
+    slug = "book-quote-demotion"
+    record_phase33_fixture(wiki, slug)
+    write_phase34_outputs(wiki, slug)
+    schema_path = wiki / "_meta" / "extractions" / slug / "schema" / "ch01-defs.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    block_id = f"{slug}-ch01-0001"
+    schema["claims"] = [
+        {
+            "text": f"Fixture claim {index} is source grounded for verification.",
+            "block_id": block_id,
+            "confidence_marker": "authoritative",
+            "confidence": "EXTRACTED",
+            "quote_verbatim": "A concept is defined as a named idea in a source." if index < 4 else "This quote does not exist.",
+        }
+        for index in range(5)
+    ]
+    schema_path.write_text(json.dumps(schema), encoding="utf-8")
+    proc = run([sys.executable, str(SCRIPT_DIR / "library_phase34_verify.py"), "--slug", slug, "--wiki", str(wiki)])
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    report = json.loads((wiki / "_meta" / "extractions" / slug / "specialist-verification.json").read_text(encoding="utf-8"))
+    defs = next(row for row in report["results"] if row["lane"] == "defs")
+    grounding = defs["schema"]["claim_grounding"]
+    assert grounding["demotion_count"] == 1
+    assert grounding["claims"][4]["effective_confidence"] == "AMBIGUOUS"
+
+
+def test_phase5_marks_inferred_claims(tmp: Path) -> None:
+    from _meta.scripts import library_phase5_pages as phase5
+
+    block_id = "book-marker-ch01-0001"
+    presentation = phase5.Presentation(
+        unit_id="ch01",
+        path=tmp / "team-ch01-presentation.md",
+        text="",
+        sections={"Author's Words": "Source sentence.", "Rich Definitions": "Definition text."},
+        block_ids={block_id},
+        embeds=[block_id],
+    )
+    page = phase5.render_page(
+        "book-marker",
+        {
+            "slug": "marker-concept",
+            "name": "Marker Concept",
+            "confidence": 0.7,
+            "block_ids": [block_id],
+            "claims": [{"text": "The source supports this interpretation.", "block_id": block_id, "confidence": "INFERRED"}],
+        },
+        [presentation],
+        [block_id],
+        {block_id: "raw/papers/book-marker/chapters/ch-01"},
+    )
+    assert "⚠ **Inferred claim:** The source supports this interpretation." in page
+
+
+
+def test_phase4_downweights_and_groups_ambiguous_claims(tmp: Path) -> None:
+    from _meta.scripts import library_phase4_merge_score as phase4
+
+    claims = [
+        {
+            "lane": "defs",
+            "block_id": "book-score-ch01-0001",
+            "text": "This claim needs review.",
+            "confidence": "AMBIGUOUS",
+            "effective_confidence": "AMBIGUOUS",
+            "reason": "",
+        }
+    ]
+    scored = [{"slug": "score-concept", "score": 5, "block_ids": ["book-score-ch01-0001"]}]
+    phase4.downweight_ambiguous_claims(scored, claims)
+    assert scored[0]["score"] == 4
+    packet = {
+        "slug": "book-score",
+        "clean_candidate_count": 1,
+        "total_scored_concepts": 1,
+        "rationales": [],
+        "needs_human_eyes": claims,
+    }
+    assert "## Needs human eyes" in phase4.render_rationale_markdown(packet)
+
 def test_phase34_verifies_outputs_schema_and_manifest(tmp: Path) -> None:
     wiki = tmp / "wiki"
     slug = "book-verify-pass"

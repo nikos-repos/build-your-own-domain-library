@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 1.1,
   "library_name": "Domain Library",
   "tenant": "domain-library",
   "domain_summary": "Source-grounded academic domain library built from books and articles.",

@@ -89,6 +89,17 @@ to `STALE`, and writes `READY_FOR_<phase>` state. `STALE` is actionable, not
 drift. The next command remains canonical. A runner's `--force` is separate
 and may have overwrite behavior; do not add it merely to bypass a stale gate.
 
+## Claim confidence discipline
+
+Every schema JSON `claims` item requires one confidence label:
+`EXTRACTED` for a direct source statement, `INFERRED` for a reasoned
+interpretation, or `AMBIGUOUS` for insufficient evidence. `EXTRACTED` also
+requires `quote_verbatim` copied exactly from its cited source-index block.
+Phase 3.4 records per-claim grounding outcomes, demotes mismatches to
+`AMBIGUOUS`, and fails a lane only above a 20% EXTRACTED-claim demotion rate.
+Phase 4 down-weights ambiguous evidence and keeps it under `Needs human eyes`;
+Phase 5 renders `⚠` beside inferred claims.
+
 ## Active command table
 
 The command names below use a neutral `library_` prefix. Replace this prefix with your project's actual runner names if needed, but do not bypass the phase gates.

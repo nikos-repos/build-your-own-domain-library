@@ -120,6 +120,14 @@ def near_duplicate_groups(candidate_slugs: List[str], existing_slugs: List[str],
     return flags
 
 
+
+def concept_block_ids(concept: Dict) -> set[str]:
+    block_ids = {str(block_id) for block_id in concept.get("block_ids", []) if block_id}
+    for item in [*concept.get("definitions", []), *concept.get("formulas", [])]:
+        if isinstance(item, dict) and item.get("block_id"):
+            block_ids.add(str(item["block_id"]))
+    return block_ids
+
 def merge_concepts(extractions: List[Dict]) -> Dict[str, Dict]:
     """Merge concepts across chapters, deduplicating by slug."""
     merged = defaultdict(lambda: {
@@ -134,13 +142,15 @@ def merge_concepts(extractions: List[Dict]) -> Dict[str, Dict]:
         "chapters": set(),
         "confidence": 0.0,
         "concepts_per_100_lines": 0.0,
-        "source_count": 0
+        "source_count": 0,
+        "claims": [],
     })
 
     for ext in extractions:
         chapter = ext.get("chapter", 0)
         chapter_title = ext.get("chapter_title", "")
 
+        claims = [claim for claim in ext.get("claims", []) if isinstance(claim, dict)]
         for concept in ext.get("concepts", []):
             slug = concept.get("slug", "")
             if not slug:
@@ -155,6 +165,7 @@ def merge_concepts(extractions: List[Dict]) -> Dict[str, Dict]:
             m["formulas"].extend(concept.get("formulas", []))
             m["block_ids"].extend(concept.get("block_ids", []))
             m["cross_references"].extend(concept.get("cross_references", []))
+            m["claims"].extend(claim for claim in claims if str(claim.get("block_id")) in concept_block_ids(concept))
             m["chapters"].add(chapter)
             m["confidence"] = max(m["confidence"], concept.get("confidence", 0.5))
             m["concepts_per_100_lines"] = max(
@@ -182,6 +193,7 @@ def merge_concepts(extractions: List[Dict]) -> Dict[str, Dict]:
             base["formulas"].extend(o["formulas"])
             base["block_ids"].extend(o["block_ids"])
             base["cross_references"].extend(o["cross_references"])
+            base["claims"].extend(o["claims"])
             base["chapters"] |= o["chapters"]
             base["confidence"] = max(base["confidence"], o["confidence"])
             base["concepts_per_100_lines"] = max(base["concepts_per_100_lines"], o["concepts_per_100_lines"])

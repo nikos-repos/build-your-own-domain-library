@@ -72,6 +72,7 @@ documented overwrite behavior is intended.
 * **lane** — one specialist extraction role (definitions, formulas, examples, warnings, empirical context). One agent task per unit × lane.
 * **gate** — machine-written JSON under `_meta/extractions/<slug>/gates/` recording PASS/FAIL for a phase. Every phase writes one; every phase checks its predecessor's.
 * **STALE gate** — a prior gate invalidated by `domain-library rerun`; its old payload remains nested under `previous`, and `domain-library next` gives the phase command to rebuild it.
+* **claim confidence** — `EXTRACTED` is an exact quoted source span, `INFERRED` is a disclosed interpretation marked `⚠` on pages, and `AMBIGUOUS` is retained for Phase 4 human review.
 * **embed** — Obsidian transclusion `![[target#^block-id]]` that renders the source passage inside a concept page.
 
 ## Maintaining the pipeline

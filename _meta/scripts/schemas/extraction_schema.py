@@ -21,7 +21,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Literal
 from pydantic import BaseModel, Field, field_validator, model_validator, ValidationError
 
 
@@ -50,7 +50,14 @@ class Claim(BaseModel):
     text: str = Field(..., min_length=10)
     block_id: str = Field(..., pattern=BLOCK_ID_PATTERN)
     confidence_marker: str = Field(..., pattern=r"^(authoritative|tentative|opinion)$")
+    confidence: Literal["EXTRACTED", "INFERRED", "AMBIGUOUS"]
+    quote_verbatim: str = ""
 
+    @model_validator(mode="after")
+    def extracted_claim_requires_quote(self) -> "Claim":
+        if self.confidence == "EXTRACTED" and not self.quote_verbatim.strip():
+            raise ValueError("EXTRACTED claims require a non-empty quote_verbatim")
+        return self
 
 class EntityMention(BaseModel):
     slug: str = Field(..., pattern=r"^[a-z0-9-]+$")

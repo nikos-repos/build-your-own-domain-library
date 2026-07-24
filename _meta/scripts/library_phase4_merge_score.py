@@ -58,6 +58,7 @@ from domain_library.pipeline.common import (  # shared plumbing — audit T10
     utc_now,
     write_gate,
     write_json,
+    verification_path,
 )
 from domain_library.pipeline import common as pipeline_common
 
@@ -250,6 +251,55 @@ def source_index_blocks(wiki: Path, slug: str) -> dict[str, dict[str, Any]]:
     return blocks
 
 
+def claims_needing_human_eyes(sdir: Path, verification: dict[str, Any]) -> list[dict[str, Any]]:
+    effective_by_file = {
+        Path(str(result.get("schema_output"))).name: {
+            int(claim["claim_index"]): claim
+            for claim in result.get("schema", {}).get("claim_grounding", {}).get("claims", [])
+            if isinstance(claim, dict) and isinstance(claim.get("claim_index"), int)
+        }
+        for result in verification.get("results", [])
+        if isinstance(result, dict)
+    }
+    rows: list[dict[str, Any]] = []
+    for path in sorted(sdir.glob("*.json")):
+        if path.name.startswith("_") or path.name in EXTRACTION_SKIP_NAMES:
+            continue
+        data = read_json(path)
+        claims = data.get("claims", [])
+        if not isinstance(claims, list):
+            continue
+        grounding = effective_by_file.get(path.name, {})
+        for index, claim in enumerate(claims):
+            if not isinstance(claim, dict):
+                continue
+            checked = grounding.get(index, {})
+            confidence = checked.get("effective_confidence", claim.get("confidence"))
+            if confidence != "AMBIGUOUS":
+                continue
+            rows.append(
+                {
+                    "lane": lane_from_schema_file(path),
+                    "file": path.name,
+                    "claim_index": index,
+                    "text": str(claim.get("text", "")),
+                    "block_id": str(claim.get("block_id", "")),
+                    "confidence": str(claim.get("confidence", "")),
+                    "effective_confidence": confidence,
+                    "reason": str(checked.get("reason", "")),
+                }
+            )
+    return rows
+
+
+def downweight_ambiguous_claims(scored: list[dict[str, Any]], claims: list[dict[str, Any]]) -> None:
+    ambiguous_blocks = {claim["block_id"] for claim in claims if claim.get("block_id")}
+    for concept in scored:
+        count = len(ambiguous_blocks & {str(block_id) for block_id in concept.get("block_ids", [])})
+        concept["ambiguous_claim_count"] = count
+        concept["score"] = max(0, int(concept.get("score", 0)) - count)
+
+
 def duplicate_risks_for(slug: str, duplicate_flags: list[dict[str, Any]] | None, aliases: list[str]) -> list[str]:
     risks: list[str] = []
     alias_set = {slug, *aliases}
@@ -296,6 +346,7 @@ def build_rationale_packet(
     duplicate_flags: list[dict[str, Any]] | None,
     min_score: int,
     top_n: int | None,
+    ambiguous_claims: list[dict[str, Any]],
 ) -> dict[str, Any]:
     source_map = concept_source_map(sdir)
     index_blocks = source_index_blocks(wiki, slug)
@@ -345,6 +396,7 @@ def build_rationale_packet(
         "clean_candidate_count": len(clean_concepts),
         "total_scored_concepts": len(all_scored),
         "rationale_count": len(rationales),
+        "needs_human_eyes": ambiguous_claims,
         "rationales": rationales,
     }
 
@@ -389,6 +441,16 @@ def render_rationale_markdown(packet: dict[str, Any]) -> str:
             )
             + " |"
         )
+    lines.extend(["", "## Needs human eyes", ""])
+    if packet["needs_human_eyes"]:
+        for claim in packet["needs_human_eyes"]:
+            reason = f" — {claim['reason']}" if claim["reason"] else ""
+            lines.append(
+                f"- `{claim['lane']}` claim at `^{claim['block_id']}`: "
+                f"{claim['text']} ({claim['confidence']} → {claim['effective_confidence']}){reason}"
+            )
+    else:
+        lines.append("- none")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -480,6 +542,9 @@ def prepare(args: argparse.Namespace) -> None:
         validate_extraction_sources(extractions, slug)
         merged = scoring_layer.merge_concepts(extractions)
         scored = scoring_layer.score_all(merged)
+        ambiguous_claims = claims_needing_human_eyes(sdir, read_json(verification_path(wiki, slug)))
+        downweight_ambiguous_claims(scored, ambiguous_claims)
+        scored.sort(key=lambda concept: (-int(concept.get("score", 0)), str(concept.get("slug", ""))))
         if not scored:
             raise RuntimeError("scoring produced no concepts")
         write_json(scored_path(wiki, slug), {"slug": slug, "total_concepts": len(scored), "concepts": scored})
@@ -523,6 +588,7 @@ def prepare(args: argparse.Namespace) -> None:
             duplicate_flags,
             args.min_score,
             args.top_n,
+            ambiguous_claims,
         )
         write_json(rationale_json_path(wiki, slug), rationale_packet)
         rationale_md_path(wiki, slug).write_text(render_rationale_markdown(rationale_packet), encoding="utf-8")
@@ -571,6 +637,7 @@ def prepare(args: argparse.Namespace) -> None:
             "selected_before_latex_filter": len(selected),
             "candidate_count": len(clean_concepts),
             "removed_latex_slugs": removed,
+            "ambiguous_claim_count": len(ambiguous_claims),
             "failures": [],
         }
         write_json(scoring_report_path(wiki, slug), report)
