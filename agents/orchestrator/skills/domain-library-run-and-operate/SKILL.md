@@ -82,6 +82,13 @@ After Phase 3.4, inspect
 `AMBIGUOUS`, not silently accepted. Continue only when the gate passes: more
 than 20% demotions among a lane's EXTRACTED claims fails that lane.
 
+## Cost ledger
+
+Inspect `_meta/extractions/<slug>/cost-ledger.jsonl` for append-only raw
+provider usage. Phase 1 records OCR tokens or a page-count proxy; Phase 3.3
+records optional task token counts from the dispatch result. The post audit
+copies aggregate tokens and per-phase totals into its `cost` report field.
+
 ## Two special phases
 
 - **3.3 is three steps**, and only the middle one involves agents:

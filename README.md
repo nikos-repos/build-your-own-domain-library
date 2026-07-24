@@ -48,6 +48,14 @@ The canonical phase workflow is the [ingest skill](agents/orchestrator/skills/do
 
 Setup is intended to take only a few minutes after Python and an OCR key are available. Full ingestion time and OCR cost will scale with document size.
 
+## Cost and token ledger
+
+Each OCR API response and dispatch task that reports tokens appends an immutable
+JSON line to `_meta/extractions/<slug>/cost-ledger.jsonl`. OCR responses without
+token metadata record their page count as a clearly labeled proxy. The final
+audit report includes aggregate input/output tokens and per-phase totals; USD
+conversion is intentionally not performed.
+
 ## Safe reruns
 
 To re-run a phase without deleting source or generated artifacts:

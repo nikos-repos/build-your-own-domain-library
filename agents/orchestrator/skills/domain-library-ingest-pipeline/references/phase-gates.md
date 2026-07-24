@@ -32,6 +32,14 @@ than 20% demotions among a lane's EXTRACTED claims fail the Phase 3.4 gate.
 Phase 4 down-weights ambiguous claims and groups them in `Needs human eyes`.
 Phase 5 renders a `⚠` marker for INFERRED claims.
 
+## Cost and token ledger
+
+`cost-ledger.jsonl` under the extraction root is append-only provider usage
+data. Phase 1 records GLM-OCR `usage` tokens when returned, otherwise a
+`page_count_proxy`; Phase 3.3 records optional task `tokens_in` and
+`tokens_out` from dispatch results. The post audit aggregates raw token totals
+and `by_phase` data in its `cost` field. USD conversion is out of scope.
+
 ## Gate lifecycle and safe invalidation
 
 `PASS` gates may record `input_fingerprints`: deterministic SHA-256 digests of

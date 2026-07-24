@@ -65,6 +65,7 @@ IMAGE_LABELS = {"image", "chart", "seal", "figure"}
 from domain_library.pipeline.common import (  # shared plumbing — audit T10
     extraction_root,
     gate_path,
+    record_cost,
     rel,
     resolve_path,
     state_path,
@@ -97,6 +98,19 @@ def result_text(result: dict[str, Any]) -> str:
         if isinstance(md, str) and md.strip():
             return md
     return ""
+
+
+def ocr_usage(data: dict[str, Any]) -> tuple[int | None, int | None, str]:
+    raw = data.get("result") if isinstance(data.get("result"), dict) else data
+    usage = raw.get("usage") if isinstance(raw, dict) and isinstance(raw.get("usage"), dict) else {}
+    tokens_in = usage.get("prompt_tokens", usage.get("input_tokens"))
+    tokens_out = usage.get("completion_tokens", usage.get("output_tokens"))
+    model = str(raw.get("model") or data.get("model") or "glm-ocr") if isinstance(raw, dict) else "glm-ocr"
+    return (
+        int(tokens_in) if isinstance(tokens_in, (int, float)) else None,
+        int(tokens_out) if isinstance(tokens_out, (int, float)) else None,
+        model,
+    )
 
 
 def layout_pages(result: dict[str, Any]) -> list[list[dict[str, Any]]]:
@@ -450,11 +464,13 @@ def main() -> None:
     all_pages: list[list[dict[str, Any]]] = []
 
     for chunk_idx, start_page, end_page, chunk_pdf in chunks:
+        api_called = False
         out_json = glm_root / f"chunk-{chunk_idx:03d}-pages-{start_page:04d}-{end_page:04d}.json"
         if args.force or not valid_ocr_result(out_json):
             if out_json.exists():
                 out_json.unlink()
             proc = run_glm_cli(cli, chunk_pdf, out_json)
+            api_called = True
             if proc.returncode != 0 or not valid_ocr_result(out_json):
                 failures.append(
                     {
@@ -472,6 +488,18 @@ def main() -> None:
             print(f"OCR skip valid {out_json}", flush=True)
 
         data = load_json(out_json)
+        if api_called:
+            tokens_in, tokens_out, model = ocr_usage(data)
+            record_cost(
+                wiki,
+                slug,
+                "1",
+                "glm-ocr-api",
+                model,
+                tokens_in=tokens_in,
+                tokens_out=tokens_out,
+                pages=end_page - start_page + 1,
+            )
         urls = collect_image_urls(data)
         url_map, assets, asset_failures = download_assets(urls, images_dir, args.download_timeout, args.max_asset_bytes)
         if asset_failures:

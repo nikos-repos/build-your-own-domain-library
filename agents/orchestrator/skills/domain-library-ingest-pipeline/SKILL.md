@@ -100,6 +100,15 @@ Phase 3.4 records per-claim grounding outcomes, demotes mismatches to
 Phase 4 down-weights ambiguous evidence and keeps it under `Needs human eyes`;
 Phase 5 renders `⚠` beside inferred claims.
 
+## Cost and token accounting
+
+Do not estimate USD. Phase 1 records GLM-OCR token usage after each API
+response, or a page-count proxy when usage metadata is absent. Dispatch-result
+tasks may include optional `tokens_in` and `tokens_out`; Phase 3.3 records them
+when present. Both append JSON lines to
+`_meta/extractions/<slug>/cost-ledger.jsonl`; the final audit reports totals by
+phase.
+
 ## Active command table
 
 The command names below use a neutral `library_` prefix. Replace this prefix with your project's actual runner names if needed, but do not bypass the phase gates.

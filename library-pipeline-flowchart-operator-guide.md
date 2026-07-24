@@ -27,6 +27,11 @@ when more than 20% of its EXTRACTED claims are demoted. Phase 4 down-weights
 ambiguous evidence and presents it under `Needs human eyes`; Phase 5 marks
 INFERRED claims with `⚠`.
 
+OCR usage and optional specialist-task token counts append to
+`_meta/extractions/$SLUG/cost-ledger.jsonl`. The final audit aggregates raw
+input/output tokens and OCR page-count proxies by phase; no USD estimate is
+calculated.
+
 ## Flowchart
 
 ```mermaid

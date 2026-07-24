@@ -14,13 +14,19 @@
       "runtime_task_id": "native-task-123",
       "job_id": "job-456",
       "runtime": "operator-runtime",
-      "model": "provider/model"
+      "model": "provider/model",
+      "tokens_in": 1200,
+      "tokens_out": 400
     }
   ]
 }
 ```
 
 `results` may replace `tasks`; `run_id`, `task_id`, `launcher`, and `model_id` are normalized aliases. Planned IDs and obvious fake/mock/test identifiers are rejected.
+
+`tokens_in` and `tokens_out` are optional non-negative task counts. When
+present, Phase 3.3 appends them to the extraction cost ledger; omit them when
+the runtime does not expose usage.
 
 5. Run `domain-library run library_phase33_dispatch --slug "$SLUG" --record --dispatch-result _meta/extractions/$SLUG/dispatch-result.json`.
 

@@ -48,6 +48,7 @@ from domain_library.pipeline.common import (  # shared plumbing — audit T10
     gate_path,
     load_state,
     read_json,
+    record_cost,
     rel,
     resolve_path,
     schema_dir,
@@ -513,6 +514,14 @@ def synthetic_id(planned_id: str, value: str) -> bool:
     return value == planned_id or bool(re.search(r"(^|[-_:])(fake|mock|test|synthetic|placeholder)([-_:]|$)", value, re.IGNORECASE))
 
 
+def optional_tokens(value: Any, field: str) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        raise RuntimeError(f"dispatch result {field} must be a non-negative number when present")
+    return int(value)
+
+
 def record(args: argparse.Namespace) -> None:
     wiki = Path(args.wiki).resolve()
     _load_lanes(wiki)
@@ -566,6 +575,8 @@ def record(args: argparse.Namespace) -> None:
             row["job_id"] = job_id
             row["runtime"] = runtime
             row["model"] = model
+            row["tokens_in"] = optional_tokens(dispatch_record.get("tokens_in"), "tokens_in")
+            row["tokens_out"] = optional_tokens(dispatch_record.get("tokens_out"), "tokens_out")
             row["dispatch_status"] = "recorded"
             tasks.append(row)
             unit_id = str(row["unit_id"])
@@ -575,6 +586,17 @@ def record(args: argparse.Namespace) -> None:
             raise RuntimeError(f"dispatch result missing runtime job ids for tasks: {missing[:10]}")
         if len(tasks) != int(payload.get("task_count", -1)):
             raise RuntimeError(f"recorded {len(tasks)} tasks but plan expected {payload.get('task_count')}")
+        for row in tasks:
+            if row["tokens_in"] is not None or row["tokens_out"] is not None:
+                record_cost(
+                    wiki,
+                    slug,
+                    "3.3",
+                    str(row["runtime"]),
+                    str(row["model"]),
+                    tokens_in=row["tokens_in"],
+                    tokens_out=row["tokens_out"],
+                )
 
         final_report = {
             "schema_version": 1,

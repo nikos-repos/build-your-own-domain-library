@@ -31,7 +31,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 from _meta.scripts import scoring_layer
 from _meta.scripts import source_grounding_quality
 from _meta.scripts import wiki_integrity
-from domain_library.pipeline.common import load_state, rel, validate_slug, write_gate, write_json, write_state
+from domain_library.pipeline.common import extraction_root, load_state, rel, validate_slug, write_gate, write_json, write_state
 
 
 class AuditCheck:
@@ -898,6 +898,40 @@ def run_grounding(wiki: Path, slug: str) -> dict[str, Any]:
     return {"status": "PASS" if lex["pages_checked"] > 0 and lex["low_overlap_count"] == 0 else "FAIL", "lexical": lex, "images": img}
 
 
+def cost_summary(wiki: Path, slug: str) -> dict[str, Any]:
+    summary: dict[str, Any] = {
+        "total_tokens_in": 0,
+        "total_tokens_out": 0,
+        "total_page_count_proxy": 0,
+        "entries": 0,
+        "invalid_entries": 0,
+        "by_phase": {},
+    }
+    ledger = extraction_root(wiki, slug) / "cost-ledger.jsonl"
+    if not ledger.exists():
+        return summary
+    for line in ledger.read_text(encoding="utf-8").splitlines():
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            summary["invalid_entries"] += 1
+            continue
+        if not isinstance(entry, dict):
+            summary["invalid_entries"] += 1
+            continue
+        phase = str(entry.get("phase", "unknown"))
+        row = summary["by_phase"].setdefault(phase, {"tokens_in": 0, "tokens_out": 0, "page_count_proxy": 0, "entries": 0})
+        summary["entries"] += 1
+        row["entries"] += 1
+        for key, total_key in (("tokens_in", "total_tokens_in"), ("tokens_out", "total_tokens_out"), ("page_count_proxy", "total_page_count_proxy")):
+            value = entry.get(key)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                amount = int(value)
+                row[key] += amount
+                summary[total_key] += amount
+    return summary
+
+
 def finalize_state(wiki: Path, slug: str, audit_pass: bool, grounding_pass: bool, report: Path) -> bool:
     if not audit_pass or not grounding_pass:
         return False
@@ -942,6 +976,7 @@ def main():
     report = audit.write_report()
     report["grounding"] = grounding
     report["overall_pass"] = report["overall_pass"] and grounding["status"] == "PASS"
+    report["cost"] = cost_summary(wiki, args.slug)
     write_json(report_path, report)
     audit.print_summary(report)
     finalize_state(wiki, args.slug, report["overall_pass"], grounding["status"] == "PASS", report_path)

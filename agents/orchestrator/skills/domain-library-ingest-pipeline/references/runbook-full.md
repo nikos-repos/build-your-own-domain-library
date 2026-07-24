@@ -46,6 +46,10 @@ book.md
 imgs/ or images/ when the API returns assets
 ```
 
+Each successful OCR API response appends raw usage to
+`_meta/extractions/$SLUG/cost-ledger.jsonl`; a response without usage metadata
+records its page count as `page_count_proxy`.
+
 Canonical command:
 
 ```bash
@@ -172,7 +176,9 @@ Use the current operator's native subagent mechanism for every generated assignm
       "runtime_task_id": "<real-runtime-task-id>",
       "job_id": "<real-runtime-job-id>",
       "runtime": "<runtime-name>",
-      "model": "<actual-model>"
+      "model": "<actual-model>",
+      "tokens_in": 1200,
+      "tokens_out": 400
     }
   ]
 }
@@ -188,6 +194,10 @@ domain-library run library_phase33_dispatch \
 ```
 
 Prepare-only plans must not be treated as Phase 3.3 `PASS`. Planned model strings are not proof of routing. The recorded report contains deterministic idempotency keys, actual routing metadata, and both markdown and schema JSON draft output paths for each unit/lane so Phase 3.4 can verify outputs and run schema validation.
+
+When the dispatch runtime provides optional `tokens_in` or `tokens_out` per
+task, include them in `dispatch-result.json`. The record step appends one
+provider/model usage entry per such task to `cost-ledger.jsonl`.
 
 Phase 3.4 specialist verification is gated by:
 
@@ -264,6 +274,12 @@ interpretation but renders it as `⚠ **Inferred claim:**` beside the
 source-grounded definition. This marker distinguishes inference from direct
 quoted evidence; it does not replace block provenance.
 
+
 ## Post — final audit
+
+The final audit also reads `cost-ledger.jsonl` and writes
+`cost.total_tokens_in`, `cost.total_tokens_out`, page-count proxies, and
+`cost.by_phase` into the audit JSON. It reports raw usage only; do not infer
+USD from these totals.
 
 The final declaration of completion requires `library_audit.py` exit code 0.

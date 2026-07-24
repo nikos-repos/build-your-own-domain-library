@@ -74,6 +74,36 @@ def extraction_root(wiki: Path, slug: str) -> Path:
     return wiki / "_meta" / "extractions" / validate_slug(slug)
 
 
+def record_cost(
+    wiki: Path,
+    slug: str,
+    phase: str,
+    provider: str,
+    model: str,
+    tokens_in: int | None = None,
+    tokens_out: int | None = None,
+    usd: float | None = None,
+    pages: int | None = None,
+) -> Path:
+    """Append one provider-usage event to a slug's single-writer ledger."""
+    entry: dict[str, Any] = {
+        "generated_at": utc_now(),
+        "phase": phase,
+        "provider": provider,
+        "model": model,
+    }
+    for key, value in (("tokens_in", tokens_in), ("tokens_out", tokens_out), ("usd", usd), ("page_count_proxy", pages)):
+        if value is not None:
+            entry[key] = value
+    path = extraction_root(wiki, slug) / "cost-ledger.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+    return path
+
+
 # Canonical per-extraction artifact paths shared across phase runners. audit: ponytail-20260624
 def schema_dir(wiki: Path, slug: str) -> Path:
     return extraction_root(wiki, slug) / "schema"

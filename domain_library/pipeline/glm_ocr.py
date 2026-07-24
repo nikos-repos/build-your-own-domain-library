@@ -22,6 +22,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from domain_library.paths import default_wiki
+from domain_library.pipeline.common import record_cost
 
 try:
     import requests
@@ -231,6 +232,26 @@ def _make_api_request(api_url: str, api_key: str, payload: dict) -> dict:
     return result
 
 
+def record_response_cost(result: dict[str, Any], model: str, options: dict[str, Any]) -> None:
+    wiki = options.get("ledger_wiki")
+    slug = options.get("ledger_slug")
+    if not wiki or not slug:
+        return
+    usage = result.get("usage") if isinstance(result.get("usage"), dict) else {}
+    tokens_in = usage.get("prompt_tokens", usage.get("input_tokens"))
+    tokens_out = usage.get("completion_tokens", usage.get("output_tokens"))
+    record_cost(
+        Path(str(wiki)),
+        str(slug),
+        str(options.get("ledger_phase", "1")),
+        "glm-ocr-api",
+        model,
+        tokens_in=int(tokens_in) if isinstance(tokens_in, (int, float)) else None,
+        tokens_out=int(tokens_out) if isinstance(tokens_out, (int, float)) else None,
+        pages=int(options["ledger_pages"]) if isinstance(options.get("ledger_pages"), (int, float)) else None,
+    )
+
+
 # =============================================================================
 # Main API
 # =============================================================================
@@ -306,6 +327,8 @@ def extract_text(
         result = _make_api_request(api_url, api_key, payload)
     except RuntimeError as e:
         return _error("API_ERROR", str(e), image_source)
+
+    record_response_cost(result, model, options)
 
     # Extract text from response
     try:

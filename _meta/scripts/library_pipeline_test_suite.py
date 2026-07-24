@@ -1133,6 +1133,9 @@ def test_phase33_record_writes_gate_after_jobs_recorded(tmp: Path) -> None:
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     write_phase34_outputs(wiki, slug)
     result = dispatch_result_for_plan(slug, plan)
+    for task in result["tasks"]:
+        task["tokens_in"] = 10
+        task["tokens_out"] = 2
     result_path = wiki / "_meta" / "extractions" / slug / "dispatch-result.json"
     result_path.write_text(json.dumps(result), encoding="utf-8")
     proc = run([sys.executable, str(SCRIPT_DIR / "library_phase33_dispatch.py"), "--slug", slug, "--wiki", str(wiki), "--record", "--dispatch-result", str(result_path)])
@@ -1145,6 +1148,9 @@ def test_phase33_record_writes_gate_after_jobs_recorded(tmp: Path) -> None:
     assert report["tasks"][0]["model"] == "test-provider/test-model"
     assert report["task_count"] == 5
     assert report["task_ids"]["ch01"]["defs"].startswith("native-task-")
+    assert report["tasks"][0]["tokens_in"] == 10
+    ledger = (wiki / "_meta" / "extractions" / slug / "cost-ledger.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(ledger) == 5
     gate = json.loads((wiki / "_meta" / "extractions" / slug / "gates" / "phase-3.3.json").read_text(encoding="utf-8"))
     assert gate["status"] == "PASS"
     state = json.loads((wiki / "_meta" / "extractions" / slug / "pipeline-state.json").read_text(encoding="utf-8"))
@@ -2030,6 +2036,23 @@ def test_atomic_json_write_leaves_no_partial_file(tmp: Path) -> None:
     pipeline_common.write_json(target, {"status": "PASS"})
     assert json.loads(target.read_text(encoding="utf-8"))["status"] == "PASS"
     assert list(tmp.glob(".state.json.*")) == []
+
+
+def test_cost_ledger_append_and_audit_summary(tmp: Path) -> None:
+    from _meta.scripts.library_audit import cost_summary
+    from domain_library.pipeline.common import record_cost
+
+    wiki = tmp / "wiki"
+    slug = "book-cost"
+    record_cost(wiki, slug, "1", "glm-ocr-api", "glm-ocr", tokens_in=120, tokens_out=30, pages=4)
+    record_cost(wiki, slug, "3.3", "runtime", "model", tokens_in=50, tokens_out=10)
+    ledger = wiki / "_meta" / "extractions" / slug / "cost-ledger.jsonl"
+    assert len(ledger.read_text(encoding="utf-8").splitlines()) == 2
+    summary = cost_summary(wiki, slug)
+    assert summary["total_tokens_in"] == 170
+    assert summary["total_tokens_out"] == 40
+    assert summary["total_page_count_proxy"] == 4
+    assert summary["by_phase"]["3.3"]["tokens_in"] == 50
 
 
 def test_ocr_download_retries_and_bounds_bytes(tmp: Path) -> None:
